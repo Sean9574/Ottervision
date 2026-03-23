@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OtterVision 🦦</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0c0f13;
+            --surface: #151921;
+            --surface2: #1c2230;
+            --border: #2a3142;
+            --text: #e2e8f0;
+            --text-dim: #7a8599;
+            --accent: #3b82f6;
+            --accent2: #06b6d4;
+            --green: #22c55e;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --radius: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ---- HEADER ---- */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 28px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .logo span { font-size: 24px; }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+        }
+
+        .status-dot.live { background: var(--green); animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ---- TABS ---- */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* ---- PANELS ---- */
+        .panel { display: none; padding: 24px; }
+        .panel.active { display: block; }
+
+        /* ---- LIVE FEED ---- */
+        .feed-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .video-container {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .video-container img {
+            width: 100%;
+            display: block;
+            min-height: 400px;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .video-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 450px;
+            color: var(--text-dim);
+            font-size: 15px;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .video-placeholder span { font-size: 48px; }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            padding: 14px;
+            border-top: 1px solid var(--border);
+            background: var(--surface2);
+        }
+
+        .controls input {
+            flex: 1;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .btn {
+            padding: 8px 18px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: var(--red); color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
+
+        /* ---- SIDEBAR ---- */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .stat-label { font-size: 13px; color: var(--text-dim); }
+
+        .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-value.green { color: var(--green); }
+        .stat-value.amber { color: var(--amber); }
+        .stat-value.blue { color: var(--accent2); }
+
+        /* ---- Q&A BOX ---- */
+        .qa-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .qa-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            resize: none;
+            font-family: 'DM Sans', sans-serif;
+            min-height: 60px;
+        }
+
+        .qa-answer {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.5;
+            padding: 10px;
+            background: var(--surface2);
+            border-radius: 6px;
+            min-height: 40px;
+            white-space: pre-wrap;
+        }
+
+        .qa-answer.loading { color: var(--text-dim); font-style: italic; }
+
+        /* ---- ACTIVITY BARS ---- */
+        .bar-container { margin-bottom: 8px; }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+
+        .bar-label span:first-child { color: var(--text-dim); }
+        .bar-label span:last-child { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+        .bar-track {
+            height: 6px;
+            background: var(--surface2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        /* ---- TIMELINE ---- */
+        .timeline-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+        .timeline-entry:last-child { border: none; }
+
+        .timeline-time {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-dim);
+            font-size: 11px;
+        }
+
+        .timeline-desc { margin-top: 3px; color: var(--text); }
+
+        /* ---- DATA DASHBOARD ---- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .chart-placeholder {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 900px) {
+            .feed-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="logo">
+            <span>🦦</span> OtterVision
+        </div>
+        <div class="status-badge">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Disconnected</span>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('feed')">Live Feed</div>
+        <div class="tab" onclick="switchTab('data')">Data Dashboard</div>
+    </div>
+
+    <!-- LIVE FEED PANEL -->
+    <div class="panel active" id="panel-feed">
+        <div class="feed-layout">
+            <!-- Video -->
+            <div>
+                <div class="video-container">
+                    <div class="video-placeholder" id="videoPlaceholder">
+                        <span>🦦</span>
+                        Click "Connect" to start the live feed
+                    </div>
+                    <img id="videoFrame" style="display:none;" alt="Live feed">
+                </div>
+                <div class="controls">
+                    <input type="text" id="streamUrl" value="https://www.youtube.com/watch?v=9mg9PoFEX2U" placeholder="YouTube URL or file path...">
+                    <button class="btn btn-primary" onclick="startStream()">Connect</button>
+                    <button class="btn btn-danger" onclick="stopStream()">Stop</button>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Stats -->
+                <div class="card">
+                    <div class="card-title">Live Stats</div>
+                    <div class="stat-row">
+                        <span class="stat-label">FPS</span>
+                        <span class="stat-value green" id="statFps">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Otters Detected</span>
+                        <span class="stat-value amber" id="statOtters">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Frames Processed</span>
+                        <span class="stat-value blue" id="statFrames">0</span>
+                    </div>
+                </div>
+
+                <!-- Q&A -->
+                <div class="card">
+                    <div class="card-title">Ask About the Otters</div>
+                    <div class="qa-box">
+                        <textarea class="qa-input" id="qaInput" placeholder="e.g. What is the otter holding? Are they playing together?"></textarea>
+                        <button class="btn btn-secondary" onclick="askQuestion()" style="width:100%;">Ask</button>
+                        <div class="qa-answer" id="qaAnswer">Ask a question about what the otters are doing...</div>
+                    </div>
+                </div>
+
+                <!-- Activity Distribution -->
+                <div class="card">
+                    <div class="card-title">Activity Distribution</div>
+                    <div id="activityBars"></div>
+                </div>
+
+                <!-- Recent Timeline -->
+                <div class="card">
+                    <div class="card-title">Recent Activity</div>
+                    <div id="timeline" style="max-height: 200px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATA DASHBOARD PANEL -->
+    <div class="panel" id="panel-data">
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-title">Activity Over Time</div>
+                <canvas id="activityChart" height="200"></canvas>
+                <div class="chart-placeholder" id="chartPlaceholder1">Charts populate as data is collected</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Otter Count Over Time</div>
+                <canvas id="otterCountChart" height="200"></canvas>
+                <div class="chart-placeholder" id="chartPlaceholder2">Charts populate as data is collected</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Object Interactions</div>
+                <canvas id="objectChart" height="200"></canvas>
+                <div class="chart-placeholder" id="chartPlaceholder3">Charts populate as data is collected</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Session Summary</div>
+                <div id="sessionSummary">
+                    <div class="stat-row">
+                        <span class="stat-label">Total Frames</span>
+                        <span class="stat-value" id="summaryFrames">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Most Common Activity</span>
+                        <span class="stat-value" id="summaryActivity">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Most Common Object</span>
+                        <span class="stat-value" id="summaryObject">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Avg Otters Visible</span>
+                        <span class="stat-value" id="summaryAvgOtters">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+        // ============================================================
+        // STATE
+        // ============================================================
+        let ws = null;
+        let activityChart = null;
+        let otterCountChart = null;
+        let objectChart = null;
+        let statsInterval = null;
+
+        const activityColors = {
+            swimming: '#4285f4', floating: '#34a853', eating: '#fbbc04',
+            grooming: '#ea4335', playing: '#ab47bc', socializing: '#00bcd4',
+            diving: '#3f51b5', resting: '#7986cb', exploring: '#ff8a65',
+        };
+
+        // ============================================================
+        // TAB SWITCHING
+        // ============================================================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`panel-${tab}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // ============================================================
+        // STREAM CONTROL
+        // ============================================================
+        async function startStream() {
+            const url = document.getElementById('streamUrl').value;
+
+            try {
+                const res = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: 'youtube', url: url }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                connectWebSocket();
+                startStatsPolling();
+
+                document.getElementById('statusDot').classList.add('live');
+                document.getElementById('statusText').textContent = 'Connected';
+
+            } catch (err) {
+                alert('Failed to start stream: ' + err.message);
+            }
+        }
+
+        async function stopStream() {
+            if (ws) { ws.close(); ws = null; }
+            if (statsInterval) { clearInterval(statsInterval); }
+
+            await fetch('/api/stop', { method: 'POST' });
+
+            document.getElementById('statusDot').classList.remove('live');
+            document.getElementById('statusText').textContent = 'Disconnected';
+            document.getElementById('videoFrame').style.display = 'none';
+            document.getElementById('videoPlaceholder').style.display = 'flex';
+        }
+
+        // ============================================================
+        // WEBSOCKET
+        // ============================================================
+        function connectWebSocket() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}/ws/video`);
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'frame') {
+                    const img = document.getElementById('videoFrame');
+                    img.src = 'data:image/jpeg;base64,' + msg.data;
+                    img.style.display = 'block';
+                    document.getElementById('videoPlaceholder').style.display = 'none';
+
+                    // Update quick stats
+                    if (msg.stats) {
+                        document.getElementById('statFps').textContent = msg.stats.fps;
+                        document.getElementById('statOtters').textContent = msg.stats.otters;
+                        document.getElementById('statFrames').textContent = msg.stats.frame;
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                document.getElementById('statusDot').classList.remove('live');
+                document.getElementById('statusText').textContent = 'Disconnected';
+            };
+
+            ws.onerror = (err) => {
+                console.error('WebSocket error:', err);
+            };
+        }
+
+        // ============================================================
+        // Q&A
+        // ============================================================
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const answer = document.getElementById('qaAnswer');
+            const question = input.value.trim();
+
+            if (!question) return;
+
+            answer.textContent = 'Thinking...';
+            answer.classList.add('loading');
+
+            try {
+                const res = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question }),
+                });
+                const data = await res.json();
+                answer.textContent = data.answer;
+                answer.classList.remove('loading');
+            } catch (err) {
+                answer.textContent = 'Error: ' + err.message;
+                answer.classList.remove('loading');
+            }
+        }
+
+        // Allow Enter to submit question
+        document.getElementById('qaInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+
+        // ============================================================
+        // STATS POLLING
+        // ============================================================
+        function startStatsPolling() {
+            statsInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/stats');
+                    const stats = await res.json();
+                    updateActivityBars(stats.activity_distribution);
+                    updateTimeline(stats.recent_timeline);
+                    updateDashboard(stats);
+                } catch (err) {
+                    console.error('Stats error:', err);
+                }
+            }, 2000);
+        }
+
+        function updateActivityBars(distribution) {
+            const container = document.getElementById('activityBars');
+            const total = Object.values(distribution).reduce((a, b) => a + b, 0) || 1;
+
+            let html = '';
+            const sorted = Object.entries(distribution).sort((a, b) => b[1] - a[1]);
+
+            for (const [activity, count] of sorted) {
+                const pct = ((count / total) * 100).toFixed(1);
+                const color = activityColors[activity] || '#888';
+                html += `
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>${activity}</span>
+                            <span>${pct}%</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: ${pct}%; background: ${color};"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html || '<div style="color: var(--text-dim); font-size: 13px;">No data yet...</div>';
+        }
+
+        function updateTimeline(timeline) {
+            const container = document.getElementById('timeline');
+            const recent = timeline.slice(-10).reverse();
+
+            let html = '';
+            for (const entry of recent) {
+                const activities = entry.activities.join(', ');
+                const objects = entry.objects.length ? ` — holding: ${entry.objects.join(', ')}` : '';
+                html += `
+                    <div class="timeline-entry">
+                        <div class="timeline-time">${entry.time}</div>
+                        <div class="timeline-desc">${entry.otters} otter(s): ${activities}${objects}</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html || '<div style="color: var(--text-dim); font-size: 13px;">Waiting for detections...</div>';
+        }
+
+        function updateDashboard(stats) {
+            // Session summary
+            document.getElementById('summaryFrames').textContent = stats.total_frames;
+
+            const actDist = stats.activity_distribution;
+            const objDist = stats.object_distribution;
+
+            if (Object.keys(actDist).length > 0) {
+                const topAct = Object.entries(actDist).sort((a, b) => b[1] - a[1])[0];
+                document.getElementById('summaryActivity').textContent = topAct[0];
+            }
+
+            if (Object.keys(objDist).length > 0) {
+                const topObj = Object.entries(objDist).sort((a, b) => b[1] - a[1])[0];
+                document.getElementById('summaryObject').textContent = topObj[0];
+            }
+
+            const otterHistory = stats.otter_count_history;
+            if (otterHistory.length > 0) {
+                const avg = (otterHistory.reduce((a, b) => a + b, 0) / otterHistory.length).toFixed(1);
+                document.getElementById('summaryAvgOtters').textContent = avg;
+            }
+        }
+    </script>
+</body>
+</html>

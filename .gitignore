@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Data (large - don't commit)
+data/videos/
+data/frames/
+data/crops/
+data/labels/
+data/yolo_dataset/
+
+# Trained models (large - don't commit)
+models/*.pt
+models/*.pth
+models/*.npz
+models/yolo_seg_train/
+
+# Ultralytics / YOLO cache
+runs/
+
+# Huggingface model cache
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
