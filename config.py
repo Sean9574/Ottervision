@@ -230,13 +230,13 @@ MAX_FRAME_BUFFER = 30
 
 # --- Web Server ---
 HOST = "0.0.0.0"
-PORT = 8000
+PORT = 1212
 WEBSOCKET_FRAME_INTERVAL = 1.0 / DISPLAY_FPS
 
 # --- Visualization ---
 ACTIVITY_COLORS = {
     "swimming": (66, 133, 244),
-    "floating": (52, 168, 83),
+    "It Do Be Chillin": (52, 168, 83),
     "eating": (251, 188, 4),
     "grooming": (234, 67, 53),
     "playing": (171, 71, 188),
