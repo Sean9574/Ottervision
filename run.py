@@ -7,8 +7,8 @@ Two-phase system:
 """
 
 import argparse
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -45,7 +45,7 @@ def main():
   PHASE 2: LIVE INFERENCE (real-time)
 ========================================
   python run.py --serve
-  Then open http://localhost:8000
+  Then open http://localhost:4444
         """,
     )
 
@@ -72,6 +72,8 @@ def main():
                         help="Training epochs (default: 100 for YOLO, 50 for LSTM)")
     parser.add_argument("--batch-size", type=int, default=16,
                         help="Batch size (default: 16)")
+    parser.add_argument("--sample", type=float, default=1.0,
+                        help="Fraction of dataset to use (0.01=1%%, 0.1=10%%, 1.0=100%%)")
 
     # Auto mode
     parser.add_argument("--auto", action="store_true",
@@ -82,7 +84,7 @@ def main():
     # Phase 2: Live
     parser.add_argument("--serve", action="store_true",
                         help="Launch web app with live inference")
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=4444)
     parser.add_argument("--host", type=str, default="0.0.0.0")
 
     args = parser.parse_args()
@@ -97,10 +99,10 @@ def main():
 
     # ---- AUTO MODE ----
     if args.auto or args.auto_no_label:
-        from modules.video_pipeline import VideoPipeline
+        from config import DATA_DIR, FRAME_DIR, LABEL_DIR, VIDEO_DIR, YOLO_DATASET_DIR
         from modules.data_prep import DataPrepPipeline
+        from modules.video_pipeline import VideoPipeline
         from modules.yolo_trainer import YOLOTrainer
-        from config import VIDEO_DIR, FRAME_DIR, YOLO_DATASET_DIR, DATA_DIR, LABEL_DIR
 
         # Check that videos exist
         video_files = [f for f in os.listdir(str(VIDEO_DIR))
@@ -182,14 +184,14 @@ def main():
 
     # ---- EXTRACT FRAMES ----
     if args.extract_frames:
+        from config import FRAME_DIR, VIDEO_DIR
         from modules.video_pipeline import VideoPipeline
-        from config import VIDEO_DIR, FRAME_DIR
         VideoPipeline.extract_all_videos(str(VIDEO_DIR), str(FRAME_DIR), args.fps)
 
     # ---- PREP DATA (GroundingDINO + SAM) ----
     if args.prep_data:
-        from modules.data_prep import DataPrepPipeline
         from config import FRAME_DIR, YOLO_DATASET_DIR
+        from modules.data_prep import DataPrepPipeline
 
         pipeline = DataPrepPipeline()
         pipeline.load_models()
@@ -200,8 +202,8 @@ def main():
 
     # ---- LABEL ----
     if args.label:
-        from utils.labeling_tool import run_labeling_tool
         from config import DATA_DIR, LABEL_DIR
+        from utils.labeling_tool import run_labeling_tool
 
         crops_dir = str(DATA_DIR / "crops")
         labels_file = str(LABEL_DIR / "activity_labels.json")
@@ -217,13 +219,13 @@ def main():
         from modules.yolo_trainer import YOLOTrainer
 
         trainer = YOLOTrainer()
-        trainer.train(epochs=args.epochs, batch=args.batch_size)
+        trainer.train(epochs=args.epochs, batch=args.batch_size, sample=args.sample)
         print("\n[OtterVision] YOLO training complete!")
-        print("[OtterVision] Next: python run.py --label (then --train-lstm)")
 
     # ---- TRAIN LSTM ----
     if args.train_lstm:
         from modules.lstm_trainer import LSTMTrainer
+
         from config import DATA_DIR, LABEL_DIR
 
         crops_dir = str(DATA_DIR / "crops")

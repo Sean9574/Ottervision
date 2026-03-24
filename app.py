@@ -1,39 +1,42 @@
 """
 OtterVision Web Server
-FastAPI + WebSocket. Uses trained YOLOv8-seg + LSTM for fast live inference.
-LLaVA loaded on-demand for Q&A only.
+YOLO segments otters every frame (fast).
+LLaVA auto-labels activity every few seconds + detailed Q&A on demand.
 """
 
 import asyncio
 import base64
 import time
+from collections import Counter, deque
+
 import cv2
 import numpy as np
-from collections import deque, Counter
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from config import (
-    HOST, PORT, INFERENCE_FPS, DISPLAY_FPS, WEBSOCKET_FRAME_INTERVAL,
-    ACTIVITY_CLASSES, OBJECT_CLASSES, STATIC_DIR, TEMPLATE_DIR, YOUTUBE_LIVE_URL
+    DISPLAY_FPS,
+    HOST,
+    INFERENCE_FPS,
+    PORT,
+    STATIC_DIR,
+    TEMPLATE_DIR,
+    WEBSOCKET_FRAME_INTERVAL,
+    YOUTUBE_LIVE_URL,
 )
-from modules.live_segmenter import LiveSegmenter
-from modules.activity_classifier import ActivityClassifier
-from modules.vlm_qa import OtterVLM
+from modules.live_segmenter import LiveSegmenter, OtterDetection
 from modules.video_pipeline import VideoPipeline
+from modules.vlm_qa import OtterVLM
 
 app = FastAPI(title="OtterVision")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
-# Global state
 state = {
     "video": None,
     "segmenter": None,
-    "classifier": None,
     "vlm": None,
     "current_frame": None,
     "running": False,
@@ -50,19 +53,15 @@ state = {
 
 
 def initialize():
-    """Load trained models (fast ones only)."""
-    print("[App] Loading trained models for live inference...")
+    print("[App] Loading models...")
 
     state["segmenter"] = LiveSegmenter()
     state["segmenter"].load_model()
 
-    state["classifier"] = ActivityClassifier()
-    state["classifier"].load_models()
-
-    # VLM loaded lazily on first question
+    # VLM loads lazily on first frame or first question
     state["vlm"] = OtterVLM()
 
-    print("[App] Ready for live inference.")
+    print("[App] Ready.")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -94,8 +93,6 @@ async def start_stream(request: Request):
 
     state["video"].start()
     state["running"] = True
-    state["classifier"].reset_buffers()
-
     return JSONResponse({"status": "started", "source": source})
 
 
@@ -118,7 +115,8 @@ async def ask_question(request: Request):
     if not question.strip():
         return JSONResponse({"answer": "Please ask a question."})
 
-    answer = state["vlm"].ask(frame, question)
+    vlm = state["vlm"]
+    answer = vlm.ask_detailed(frame, question)
     return JSONResponse({"answer": answer})
 
 
@@ -162,19 +160,37 @@ async def video_websocket(websocket: WebSocket):
             state["current_frame"] = frame.copy()
             annotated = frame.copy()
 
-            # Run inference at controlled rate
             if now - last_inference >= inference_interval:
                 last_inference = now
 
                 try:
-                    # 1. YOLOv8-seg detection (fast)
+                    # 1. YOLO segmentation (fast, every frame)
                     detections = state["segmenter"].segment_frame(frame)
 
-                    # 2. LSTM activity classification
-                    if detections:
-                        state["classifier"].classify_detections(detections)
+                    # 2. VLM auto-labeling (runs every few seconds in background)
+                    vlm = state["vlm"]
+                    vlm_labels = vlm.get_activity_labels(frame)
 
-                    # 3. Draw annotations
+                    # 3. Apply VLM labels to YOLO detections
+                    for det in detections:
+                        if det.otter_id in vlm_labels:
+                            label = vlm_labels[det.otter_id]
+                            det.activity = label["activity"]
+                            det.activity_conf = 0.9
+                            det.held_object = label["object"]
+                            det.object_conf = 0.9
+                        elif vlm_labels:
+                            # If VLM found fewer/more otters than YOLO, try matching by order
+                            sorted_keys = sorted(vlm_labels.keys())
+                            if det.otter_id < len(sorted_keys):
+                                key = sorted_keys[det.otter_id]
+                                label = vlm_labels[key]
+                                det.activity = label["activity"]
+                                det.activity_conf = 0.8
+                                det.held_object = label["object"]
+                                det.object_conf = 0.8
+
+                    # 4. Draw annotations
                     annotated = state["segmenter"].draw_detections(frame, detections)
 
                     # Update stats
@@ -210,7 +226,6 @@ async def video_websocket(websocket: WebSocket):
                         (10, annotated.shape[0] - 15),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
-            # Send frame
             _, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 70])
             await websocket.send_json({
                 "type": "frame",
