@@ -1,4 +1,6 @@
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
 *.pyo
@@ -7,39 +9,70 @@ dist/
 build/
 *.egg
 
+# =========================
 # Virtual environments
+# =========================
 venv/
 env/
 .venv/
 
+# =========================
 # Data (large - don't commit)
+# =========================
+data/
 data/videos/
 data/frames/
 data/crops/
 data/labels/
 data/yolo_dataset/
 
-# Trained models (large - don't commit)
+# =========================
+# Trained models
+# =========================
+models/
 models/*.pt
 models/*.pth
 models/*.npz
 models/yolo_seg_train/
 
-# Ultralytics / YOLO cache
+# YOLO weights in root
+*.pt
+*.pth
+*.npz
+
+# =========================
+# YOLO / training outputs
+# =========================
 runs/
 
-# Huggingface model cache
+# =========================
+# HuggingFace cache
+# =========================
 .cache/
 
-# OS
+# =========================
+# OS files
+# =========================
 .DS_Store
 Thumbs.db
 
-# IDE
+# =========================
+# IDE / Editor
+# =========================
 .vscode/
 .idea/
 *.swp
 *.swo
 
+# =========================
 # Logs
+# =========================
 *.log
+
+# =========================
+# Archives (important for your issue)
+# =========================
+*.zip
+*.tar
+*.tar.gz
+*.tar.xz

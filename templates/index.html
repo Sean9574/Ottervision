@@ -3,667 +3,620 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OtterVision 🦦</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>OtterVision</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0c0f13;
-            --surface: #151921;
-            --surface2: #1c2230;
-            --border: #2a3142;
-            --text: #e2e8f0;
-            --text-dim: #7a8599;
-            --accent: #3b82f6;
-            --accent2: #06b6d4;
-            --green: #22c55e;
-            --red: #ef4444;
-            --amber: #f59e0b;
-            --radius: 10px;
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --surface-hover: #fafafa;
+            --border: #e5e5e7;
+            --border-light: #f0f0f2;
+            --text: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #aeaeb2;
+            --accent: #0071e3;
+            --accent-hover: #0077ED;
+            --accent-light: rgba(0, 113, 227, 0.08);
+            --green: #34c759;
+            --green-light: rgba(52, 199, 89, 0.1);
+            --red: #ff3b30;
+            --amber: #ff9f0a;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ---- HEADER ---- */
+        /* ===== HEADER ===== */
         .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 28px;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 32px;
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 0.5px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
         }
-
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 20px;
-            font-weight: 700;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
         }
-
-        .logo span { font-size: 24px; }
-
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            color: var(--text-dim);
-            font-family: 'JetBrains Mono', monospace;
+        .logo-icon {
+            width: 34px; height: 34px; border-radius: 10px;
+            background: linear-gradient(135deg, #0071e3, #34c759);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: white;
         }
-
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .status-pill {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+            background: var(--bg); border: 0.5px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .status-pill.live {
+            background: var(--green-light);
+            border-color: rgba(52,199,89,0.3);
+            color: #248a3d;
+        }
         .status-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: var(--red);
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text-tertiary);
         }
-
-        .status-dot.live { background: var(--green); animation: pulse 2s infinite; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        .status-pill.live .status-dot {
+            background: var(--green);
+            animation: pulse 2s infinite;
         }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
-        /* ---- TABS ---- */
-        .tabs {
+        /* ===== LAYOUT ===== */
+        .main-layout {
             display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px 32px;
             gap: 0;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .content-area {
+            flex: 1;
+            min-width: 0;
+            padding-right: 0;
+            transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .content-area.panel-open { padding-right: 24px; }
+
+        /* ===== VIDEO ===== */
+        .video-container {
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            aspect-ratio: 16/9;
+        }
+        .video-container iframe, .video-container video {
+            width: 100%; height: 100%;
+            border: none; display: block;
+            position: absolute; top: 0; left: 0;
+        }
+        .video-container canvas {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+        .video-placeholder {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%;
+            color: #666; font-size: 15px;
+            flex-direction: column; gap: 16px;
+            position: absolute; top: 0; left: 0; z-index: 5;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+        .video-placeholder.hidden { display: none; }
+        .video-placeholder .ph-icon {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px;
+        }
+        .video-placeholder .ph-text {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px; font-weight: 500;
         }
 
-        .tab {
-            padding: 12px 24px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-dim);
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
+        /* ===== CONTROLS BAR ===== */
+        .controls-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 0; flex-wrap: wrap;
+        }
+        .source-toggle {
+            display: flex; border-radius: var(--radius-sm);
+            overflow: hidden; border: 0.5px solid var(--border);
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+        .source-toggle button {
+            padding: 7px 18px; font-size: 13px; font-weight: 600;
+            border: none; cursor: pointer;
+            background: transparent; color: var(--text-secondary);
+            font-family: inherit; transition: all 0.2s;
+        }
+        .source-toggle button.active {
+            background: var(--accent); color: white;
+        }
+        .url-input {
+            flex: 1; min-width: 260px;
+            padding: 8px 16px; border-radius: var(--radius-sm);
+            border: 0.5px solid var(--border);
+            background: var(--surface);
+            font-size: 13px; color: var(--text);
+            font-family: 'Source Code Pro', monospace;
+            box-shadow: var(--shadow-sm);
+            transition: border-color 0.2s;
+        }
+        .url-input:focus { outline: none; border-color: var(--accent); }
+        .video-select {
+            padding: 8px 16px; border-radius: var(--radius-sm);
+            border: 0.5px solid var(--border);
+            background: var(--surface); color: var(--text);
+            font-size: 13px; font-family: inherit;
+            box-shadow: var(--shadow-sm); cursor: pointer;
+        }
+        .btn {
+            padding: 8px 20px; border-radius: var(--radius-sm);
+            border: none; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
             transition: all 0.2s;
         }
-
-        .tab:hover { color: var(--text); }
-        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-        /* ---- PANELS ---- */
-        .panel { display: none; padding: 24px; }
-        .panel.active { display: block; }
-
-        /* ---- LIVE FEED ---- */
-        .feed-layout {
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
+        .btn-connect {
+            background: var(--accent); color: white;
+            box-shadow: 0 1px 3px rgba(0,113,227,0.3);
         }
+        .btn-connect:hover { background: var(--accent-hover); transform: translateY(-0.5px); }
+        .btn-stop {
+            background: var(--surface); color: var(--red);
+            border: 0.5px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-stop:hover { background: #fff5f5; }
+        .btn-icon {
+            width: 36px; height: 36px; border-radius: var(--radius-sm);
+            border: 0.5px solid var(--border); background: var(--surface);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: var(--shadow-sm);
+            font-size: 16px; transition: all 0.2s;
+        }
+        .btn-icon:hover { background: var(--surface-hover); }
+        .btn-icon.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
 
-        .video-container {
+        /* ===== VIDEO INFO BAR ===== */
+        .video-info {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 0 8px;
+        }
+        .video-title {
+            font-size: 18px; font-weight: 700; letter-spacing: -0.3px;
+        }
+        .video-meta {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .meta-chip {
+            display: flex; align-items: center; gap: 5px;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+            background: var(--bg); border: 0.5px solid var(--border);
+        }
+        .meta-chip .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .meta-chip.fps .dot { background: var(--green); }
+        .meta-chip.otters .dot { background: var(--amber); }
+
+        /* ===== Q&A SECTION ===== */
+        .qa-section {
+            margin-top: 20px;
             background: var(--surface);
             border-radius: var(--radius);
+            border: 0.5px solid var(--border);
+            box-shadow: var(--shadow-sm);
             overflow: hidden;
-            border: 1px solid var(--border);
-            position: relative;
         }
-
-        .video-container img {
-            width: 100%;
-            display: block;
-            min-height: 400px;
-            object-fit: contain;
-            background: #000;
+        .qa-header {
+            padding: 14px 20px;
+            font-size: 14px; font-weight: 600;
+            border-bottom: 0.5px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
         }
-
-        .video-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 450px;
-            color: var(--text-dim);
-            font-size: 15px;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .video-placeholder span { font-size: 48px; }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            padding: 14px;
-            border-top: 1px solid var(--border);
-            background: var(--surface2);
-        }
-
-        .controls input {
-            flex: 1;
-            padding: 8px 14px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
+        .qa-header svg { width: 18px; height: 18px; color: var(--accent); }
+        .qa-body { padding: 16px 20px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input {
+            flex: 1; padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: 0.5px solid var(--border);
             background: var(--bg);
-            color: var(--text);
-            font-size: 13px;
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px; color: var(--text);
+            font-family: inherit; resize: none;
+            min-height: 44px; max-height: 120px;
+            transition: border-color 0.2s;
         }
-
-        .btn {
-            padding: 8px 18px;
-            border-radius: 6px;
-            border: none;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-            font-family: 'DM Sans', sans-serif;
+        .qa-input:focus { outline: none; border-color: var(--accent); background: white; }
+        .qa-input::placeholder { color: var(--text-tertiary); }
+        .qa-send {
+            padding: 0 20px; border-radius: var(--radius-sm);
+            background: var(--accent); color: white;
+            border: none; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: background 0.2s;
+            white-space: nowrap;
         }
-
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-primary:hover { background: #2563eb; }
-        .btn-danger { background: var(--red); color: #fff; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: var(--border); }
-
-        /* ---- SIDEBAR ---- */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+        .qa-send:hover { background: var(--accent-hover); }
+        .qa-answer {
+            margin-top: 14px; padding: 14px 16px;
+            background: var(--bg); border-radius: var(--radius-sm);
+            font-size: 14px; line-height: 1.6;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            display: none;
         }
+        .qa-answer.visible { display: block; }
+        .qa-answer.loading { color: var(--text-tertiary); font-style: italic; }
 
+        /* ===== SIDE PANEL ===== */
+        .side-panel {
+            width: 0; overflow: hidden;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+        .side-panel.open { width: 340px; }
+        .side-panel-inner {
+            width: 340px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
         .card {
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             border-radius: var(--radius);
-            padding: 16px;
-        }
-
-        .card-title {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-dim);
-            margin-bottom: 12px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-        }
-
-        .stat-label { font-size: 13px; color: var(--text-dim); }
-
-        .stat-value {
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .stat-value.green { color: var(--green); }
-        .stat-value.amber { color: var(--amber); }
-        .stat-value.blue { color: var(--accent2); }
-
-        /* ---- Q&A BOX ---- */
-        .qa-box {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .qa-input {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
-            font-size: 13px;
-            resize: none;
-            font-family: 'DM Sans', sans-serif;
-            min-height: 60px;
-        }
-
-        .qa-answer {
-            font-size: 13px;
-            color: var(--text);
-            line-height: 1.5;
-            padding: 10px;
-            background: var(--surface2);
-            border-radius: 6px;
-            min-height: 40px;
-            white-space: pre-wrap;
-        }
-
-        .qa-answer.loading { color: var(--text-dim); font-style: italic; }
-
-        /* ---- ACTIVITY BARS ---- */
-        .bar-container { margin-bottom: 8px; }
-
-        .bar-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            margin-bottom: 3px;
-        }
-
-        .bar-label span:first-child { color: var(--text-dim); }
-        .bar-label span:last-child { color: var(--text); font-family: 'JetBrains Mono', monospace; }
-
-        .bar-track {
-            height: 6px;
-            background: var(--surface2);
-            border-radius: 3px;
+            box-shadow: var(--shadow-sm);
             overflow: hidden;
         }
+        .card-header {
+            padding: 14px 18px;
+            font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            color: var(--text-tertiary);
+            border-bottom: 0.5px solid var(--border-light);
+        }
+        .card-body { padding: 14px 18px; }
+        .stat-row {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 6px 0;
+        }
+        .stat-label { font-size: 13px; color: var(--text-secondary); }
+        .stat-value {
+            font-size: 14px; font-weight: 700;
+            font-family: 'Source Code Pro', monospace;
+        }
+        .stat-value.green { color: var(--green); }
+        .stat-value.amber { color: var(--amber); }
+        .stat-value.blue { color: var(--accent); }
 
+        /* Activity bars */
+        .bar-item { margin-bottom: 10px; }
+        .bar-item:last-child { margin-bottom: 0; }
+        .bar-top {
+            display: flex; justify-content: space-between;
+            font-size: 12px; margin-bottom: 4px;
+        }
+        .bar-top .name { color: var(--text-secondary); font-weight: 500; }
+        .bar-top .pct { color: var(--text); font-weight: 600; font-family: 'Source Code Pro', monospace; }
+        .bar-track {
+            height: 5px; background: var(--bg);
+            border-radius: 3px; overflow: hidden;
+        }
         .bar-fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.5s ease;
+            height: 100%; border-radius: 3px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* ---- TIMELINE ---- */
-        .timeline-entry {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
+        /* Timeline */
+        .timeline-item {
+            padding: 10px 0;
+            border-bottom: 0.5px solid var(--border-light);
             font-size: 12px;
         }
-
-        .timeline-entry:last-child { border: none; }
-
+        .timeline-item:last-child { border: none; }
         .timeline-time {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-dim);
-            font-size: 11px;
+            font-family: 'Source Code Pro', monospace;
+            color: var(--text-tertiary); font-size: 11px;
         }
+        .timeline-desc { margin-top: 3px; color: var(--text-secondary); line-height: 1.4; }
 
-        .timeline-desc { margin-top: 3px; color: var(--text); }
-
-        /* ---- DATA DASHBOARD ---- */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .chart-placeholder {
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-dim);
-            font-size: 13px;
-        }
-
-        /* ---- RESPONSIVE ---- */
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 900px) {
-            .feed-layout { grid-template-columns: 1fr; }
+            .main-layout { padding: 16px; }
+            .side-panel.open { width: 100%; }
+            .header { padding: 12px 16px; }
         }
     </style>
 </head>
 <body>
-
     <!-- HEADER -->
     <div class="header">
         <div class="logo">
-            <span>🦦</span> OtterVision
+            <div class="logo-icon">🦦</div>
+            OtterVision
         </div>
-        <div class="status-badge">
-            <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">Disconnected</span>
-        </div>
-    </div>
-
-    <!-- TABS -->
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('feed')">Live Feed</div>
-        <div class="tab" onclick="switchTab('data')">Data Dashboard</div>
-    </div>
-
-    <!-- LIVE FEED PANEL -->
-    <div class="panel active" id="panel-feed">
-        <div class="feed-layout">
-            <!-- Video -->
-            <div>
-                <div class="video-container">
-                    <div class="video-placeholder" id="videoPlaceholder">
-                        <span>🦦</span>
-                        Click "Connect" to start the live feed
-                    </div>
-                    <img id="videoFrame" style="display:none;" alt="Live feed">
-                </div>
-                <div class="controls">
-                    <input type="text" id="streamUrl" value="https://www.youtube.com/watch?v=9mg9PoFEX2U" placeholder="YouTube URL or file path...">
-                    <button class="btn btn-primary" onclick="startStream()">Connect</button>
-                    <button class="btn btn-danger" onclick="stopStream()">Stop</button>
-                </div>
-            </div>
-
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <!-- Stats -->
-                <div class="card">
-                    <div class="card-title">Live Stats</div>
-                    <div class="stat-row">
-                        <span class="stat-label">FPS</span>
-                        <span class="stat-value green" id="statFps">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Otters Detected</span>
-                        <span class="stat-value amber" id="statOtters">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Frames Processed</span>
-                        <span class="stat-value blue" id="statFrames">0</span>
-                    </div>
-                </div>
-
-                <!-- Q&A -->
-                <div class="card">
-                    <div class="card-title">Ask About the Otters</div>
-                    <div class="qa-box">
-                        <textarea class="qa-input" id="qaInput" placeholder="e.g. What is the otter holding? Are they playing together?"></textarea>
-                        <button class="btn btn-secondary" onclick="askQuestion()" style="width:100%;">Ask</button>
-                        <div class="qa-answer" id="qaAnswer">Ask a question about what the otters are doing...</div>
-                    </div>
-                </div>
-
-                <!-- Activity Distribution -->
-                <div class="card">
-                    <div class="card-title">Activity Distribution</div>
-                    <div id="activityBars"></div>
-                </div>
-
-                <!-- Recent Timeline -->
-                <div class="card">
-                    <div class="card-title">Recent Activity</div>
-                    <div id="timeline" style="max-height: 200px; overflow-y: auto;"></div>
-                </div>
+        <div class="header-right">
+            <div class="status-pill" id="statusPill">
+                <div class="status-dot"></div>
+                <span id="statusText">Offline</span>
             </div>
         </div>
     </div>
 
-    <!-- DATA DASHBOARD PANEL -->
-    <div class="panel" id="panel-data">
-        <div class="dashboard-grid">
-            <div class="card">
-                <div class="card-title">Activity Over Time</div>
-                <canvas id="activityChart" height="200"></canvas>
-                <div class="chart-placeholder" id="chartPlaceholder1">Charts populate as data is collected</div>
+    <!-- MAIN -->
+    <div class="main-layout">
+        <div class="content-area" id="contentArea">
+            <!-- VIDEO -->
+            <div class="video-container" id="videoWrap">
+                <div class="video-placeholder" id="placeholder">
+                    <div class="ph-icon">🦦</div>
+                    <div class="ph-text">Connect to a live feed or select a local video</div>
+                </div>
+                <canvas id="overlayCanvas"></canvas>
             </div>
-            <div class="card">
-                <div class="card-title">Otter Count Over Time</div>
-                <canvas id="otterCountChart" height="200"></canvas>
-                <div class="chart-placeholder" id="chartPlaceholder2">Charts populate as data is collected</div>
+
+            <!-- VIDEO INFO -->
+            <div class="video-info">
+                <div class="video-title">Otter Exhibit — Live Analysis</div>
+                <div class="video-meta">
+                    <div class="meta-chip fps"><div class="dot"></div><span id="chipFps">0 fps</span></div>
+                    <div class="meta-chip otters"><div class="dot"></div><span id="chipOtters">0 otters</span></div>
+                </div>
             </div>
-            <div class="card">
-                <div class="card-title">Object Interactions</div>
-                <canvas id="objectChart" height="200"></canvas>
-                <div class="chart-placeholder" id="chartPlaceholder3">Charts populate as data is collected</div>
+
+            <!-- CONTROLS -->
+            <div class="controls-bar">
+                <div class="source-toggle">
+                    <button class="active" onclick="setSource('youtube')">YouTube</button>
+                    <button onclick="setSource('local')">Local</button>
+                </div>
+                <div id="youtubeControls" style="display:contents">
+                    <input class="url-input" type="text" id="streamUrl" value="https://www.youtube.com/watch?v=_KXHUb0wFRE" placeholder="YouTube URL...">
+                </div>
+                <div id="localControls" style="display:none">
+                    <select class="video-select" id="videoSelect"><option value="">Loading...</option></select>
+                </div>
+                <button class="btn btn-connect" onclick="startStream()">Connect</button>
+                <button class="btn btn-stop" onclick="stopStream()">Stop</button>
+                <div style="flex:1"></div>
+                <button class="btn-icon" id="panelToggle" onclick="togglePanel()" title="Toggle Stats Panel">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
+                </button>
             </div>
-            <div class="card">
-                <div class="card-title">Session Summary</div>
-                <div id="sessionSummary">
-                    <div class="stat-row">
-                        <span class="stat-label">Total Frames</span>
-                        <span class="stat-value" id="summaryFrames">0</span>
+
+            <!-- Q&A -->
+            <div class="qa-section">
+                <div class="qa-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg>
+                    Ask the AI about the otters
+                </div>
+                <div class="qa-body">
+                    <div class="qa-input-row">
+                        <textarea class="qa-input" id="qaInput" rows="1" placeholder="What are the otters doing? Are they playing together?"></textarea>
+                        <button class="qa-send" onclick="askQuestion()">Ask</button>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Most Common Activity</span>
-                        <span class="stat-value" id="summaryActivity">-</span>
+                    <div class="qa-answer" id="qaAnswer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDE PANEL -->
+        <div class="side-panel" id="sidePanel">
+            <div class="side-panel-inner">
+                <div class="card">
+                    <div class="card-header">Live Statistics</div>
+                    <div class="card-body">
+                        <div class="stat-row"><span class="stat-label">Ensemble FPS</span><span class="stat-value green" id="statFps">0</span></div>
+                        <div class="stat-row"><span class="stat-label">Otters Detected</span><span class="stat-value amber" id="statOtters">0</span></div>
+                        <div class="stat-row"><span class="stat-label">Total Inferences</span><span class="stat-value blue" id="statTotal">0</span></div>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Most Common Object</span>
-                        <span class="stat-value" id="summaryObject">-</span>
+                </div>
+                <div class="card">
+                    <div class="card-header">Activity Distribution</div>
+                    <div class="card-body" id="activityBars">
+                        <div style="color:var(--text-tertiary);font-size:13px">No data yet</div>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Avg Otters Visible</span>
-                        <span class="stat-value" id="summaryAvgOtters">0</span>
+                </div>
+                <div class="card">
+                    <div class="card-header">Recent Activity</div>
+                    <div class="card-body" id="timeline" style="max-height:260px;overflow-y:auto">
+                        <div style="color:var(--text-tertiary);font-size:13px">Waiting for data...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script>
-        // ============================================================
-        // STATE
-        // ============================================================
-        let ws = null;
-        let activityChart = null;
-        let otterCountChart = null;
-        let objectChart = null;
-        let statsInterval = null;
+        let overlayWs=null, statsInterval=null, inferenceWidth=1280, inferenceHeight=720, currentSource='youtube', panelOpen=false;
+        const actColors={floating:'#34c759',diving:'#5856d6',eating:'#ff9f0a',grooming:'#ff3b30',playing:'#af52de',socializing:'#30b0c7',resting:'#8e8e93',exploring:'#ff6723',active:'#0071e3'};
 
-        const activityColors = {
-            swimming: '#4285f4', floating: '#34a853', eating: '#fbbc04',
-            grooming: '#ea4335', playing: '#ab47bc', socializing: '#00bcd4',
-            diving: '#3f51b5', resting: '#7986cb', exploring: '#ff8a65',
-        };
-
-        // ============================================================
-        // TAB SWITCHING
-        // ============================================================
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            document.getElementById(`panel-${tab}`).classList.add('active');
+        function setSource(s){
+            currentSource=s;
+            document.querySelectorAll('.source-toggle button').forEach(e=>e.classList.remove('active'));
             event.target.classList.add('active');
+            document.getElementById('youtubeControls').style.display=s==='youtube'?'contents':'none';
+            document.getElementById('localControls').style.display=s==='local'?'contents':'none';
+            if(s==='local')loadVideoList();
+        }
+        async function loadVideoList(){try{const r=await fetch('/api/videos');const d=await r.json();const s=document.getElementById('videoSelect');s.innerHTML=d.videos.length?d.videos.map(v=>`<option value="${v}">${v}</option>`).join(''):'<option value="">No videos</option>'}catch(e){}}
+        function extractYouTubeId(u){const m=u.match(/[?&]v=([^&]+)/)||u.match(/youtu\.be\/([^?]+)/);return m?m[1]:null}
+
+        function togglePanel(){
+            panelOpen=!panelOpen;
+            document.getElementById('sidePanel').classList.toggle('open',panelOpen);
+            document.getElementById('contentArea').classList.toggle('panel-open',panelOpen);
+            document.getElementById('panelToggle').classList.toggle('active',panelOpen);
         }
 
-        // ============================================================
-        // STREAM CONTROL
-        // ============================================================
-        async function startStream() {
-            const url = document.getElementById('streamUrl').value;
-
-            try {
-                const res = await fetch('/api/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ source: 'youtube', url: url }),
-                });
-                const data = await res.json();
-
-                if (data.error) {
-                    alert('Error: ' + data.error);
-                    return;
+        async function startStream(){
+            const wrap=document.getElementById('videoWrap');
+            let body={};
+            if(currentSource==='youtube'){body={source:'youtube',url:document.getElementById('streamUrl').value}}
+            else{const fn=document.getElementById('videoSelect').value;if(!fn){alert('Select a video.');return}body={source:'local',filename:fn}}
+            try{
+                const r=await fetch('/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+                const d=await r.json();
+                if(d.error){alert(d.error);return}
+                if(d.width)inferenceWidth=d.width;
+                if(d.height)inferenceHeight=d.height;
+                document.getElementById('placeholder').classList.add('hidden');
+                const o1=document.getElementById('ytPlayer');if(o1)o1.remove();
+                const o2=document.getElementById('localPlayer');if(o2)o2.remove();
+                if(currentSource==='youtube'){
+                    const vid=extractYouTubeId(body.url);
+                    if(vid){const f=document.createElement('iframe');f.id='ytPlayer';f.src=`https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&playsinline=1&controls=1`;f.allow='autoplay; encrypted-media';f.allowFullscreen=true;wrap.insertBefore(f,document.getElementById('overlayCanvas'))}
+                }else{
+                    const v=document.createElement('video');v.id='localPlayer';v.src=`/api/video/${body.filename}`;v.autoplay=true;v.muted=true;v.loop=true;v.playsInline=true;v.controls=true;wrap.insertBefore(v,document.getElementById('overlayCanvas'))
                 }
-
-                connectWebSocket();
-                startStatsPolling();
-
-                document.getElementById('statusDot').classList.add('live');
-                document.getElementById('statusText').textContent = 'Connected';
-
-            } catch (err) {
-                alert('Failed to start stream: ' + err.message);
-            }
+                connectOverlayWs();startStatsPolling();
+                document.getElementById('statusPill').classList.add('live');
+                document.getElementById('statusText').textContent='Live';
+            }catch(e){alert('Failed: '+e.message)}
         }
 
-        async function stopStream() {
-            if (ws) { ws.close(); ws = null; }
-            if (statsInterval) { clearInterval(statsInterval); }
-
-            await fetch('/api/stop', { method: 'POST' });
-
-            document.getElementById('statusDot').classList.remove('live');
-            document.getElementById('statusText').textContent = 'Disconnected';
-            document.getElementById('videoFrame').style.display = 'none';
-            document.getElementById('videoPlaceholder').style.display = 'flex';
-        }
-
-        // ============================================================
-        // WEBSOCKET
-        // ============================================================
-        function connectWebSocket() {
-            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${location.host}/ws/video`);
-
-            ws.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-
-                if (msg.type === 'frame') {
-                    const img = document.getElementById('videoFrame');
-                    img.src = 'data:image/jpeg;base64,' + msg.data;
-                    img.style.display = 'block';
-                    document.getElementById('videoPlaceholder').style.display = 'none';
-
-                    // Update quick stats
-                    if (msg.stats) {
-                        document.getElementById('statFps').textContent = msg.stats.fps;
-                        document.getElementById('statOtters').textContent = msg.stats.otters;
-                        document.getElementById('statFrames').textContent = msg.stats.frame;
+        function connectOverlayWs(){
+            if(overlayWs)overlayWs.close();
+            const p=location.protocol==='https:'?'wss:':'ws:';
+            overlayWs=new WebSocket(`${p}//${location.host}/ws/overlay`);
+            overlayWs.onmessage=ev=>{
+                const m=JSON.parse(ev.data);
+                if(m.type==='detections'){
+                    drawOverlay(m.detections);
+                    document.getElementById('chipOtters').textContent=m.detections.length+' otter'+(m.detections.length!==1?'s':'');
+                    document.getElementById('statOtters').textContent=m.detections.length;
+                    if(m.inference_fps!=null){
+                        document.getElementById('chipFps').textContent=m.inference_fps.toFixed(0)+' fps';
+                        document.getElementById('statFps').textContent=m.inference_fps.toFixed(0);
                     }
                 }
             };
-
-            ws.onclose = () => {
-                document.getElementById('statusDot').classList.remove('live');
-                document.getElementById('statusText').textContent = 'Disconnected';
-            };
-
-            ws.onerror = (err) => {
-                console.error('WebSocket error:', err);
-            };
+            overlayWs.onclose=()=>{setTimeout(()=>{if(document.getElementById('statusPill').classList.contains('live'))connectOverlayWs()},3000)};
         }
 
-        // ============================================================
-        // Q&A
-        // ============================================================
-        async function askQuestion() {
-            const input = document.getElementById('qaInput');
-            const answer = document.getElementById('qaAnswer');
-            const question = input.value.trim();
-
-            if (!question) return;
-
-            answer.textContent = 'Thinking...';
-            answer.classList.add('loading');
-
-            try {
-                const res = await fetch('/api/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question }),
-                });
-                const data = await res.json();
-                answer.textContent = data.answer;
-                answer.classList.remove('loading');
-            } catch (err) {
-                answer.textContent = 'Error: ' + err.message;
-                answer.classList.remove('loading');
-            }
-        }
-
-        // Allow Enter to submit question
-        document.getElementById('qaInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                askQuestion();
-            }
-        });
-
-        // ============================================================
-        // STATS POLLING
-        // ============================================================
-        function startStatsPolling() {
-            statsInterval = setInterval(async () => {
-                try {
-                    const res = await fetch('/api/stats');
-                    const stats = await res.json();
-                    updateActivityBars(stats.activity_distribution);
-                    updateTimeline(stats.recent_timeline);
-                    updateDashboard(stats);
-                } catch (err) {
-                    console.error('Stats error:', err);
+        function drawOverlay(dets){
+            const c=document.getElementById('overlayCanvas'),w=document.getElementById('videoWrap'),ctx=c.getContext('2d'),r=w.getBoundingClientRect();
+            c.width=r.width;c.height=r.height;
+            const sx=r.width/inferenceWidth,sy=r.height/inferenceHeight;
+            ctx.clearRect(0,0,c.width,c.height);
+            for(const d of dets){
+                const col=actColors[d.activity]||'#0071e3';
+                const x1=d.bbox[0]*sx,y1=d.bbox[1]*sy,x2=d.bbox[2]*sx,y2=d.bbox[3]*sy;
+                // Polygon mask
+                if(d.polygon&&d.polygon.length>2){
+                    ctx.beginPath();
+                    ctx.moveTo(d.polygon[0][0]*sx,d.polygon[0][1]*sy);
+                    for(let i=1;i<d.polygon.length;i++)ctx.lineTo(d.polygon[i][0]*sx,d.polygon[i][1]*sy);
+                    ctx.closePath();
+                    ctx.fillStyle=col+'25';ctx.fill();
+                    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+                }else{
+                    ctx.strokeStyle=col;ctx.lineWidth=2;
+                    ctx.strokeRect(x1,y1,x2-x1,y2-y1);
                 }
-            }, 2000);
-        }
-
-        function updateActivityBars(distribution) {
-            const container = document.getElementById('activityBars');
-            const total = Object.values(distribution).reduce((a, b) => a + b, 0) || 1;
-
-            let html = '';
-            const sorted = Object.entries(distribution).sort((a, b) => b[1] - a[1]);
-
-            for (const [activity, count] of sorted) {
-                const pct = ((count / total) * 100).toFixed(1);
-                const color = activityColors[activity] || '#888';
-                html += `
-                    <div class="bar-container">
-                        <div class="bar-label">
-                            <span>${activity}</span>
-                            <span>${pct}%</span>
-                        </div>
-                        <div class="bar-track">
-                            <div class="bar-fill" style="width: ${pct}%; background: ${color};"></div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            container.innerHTML = html || '<div style="color: var(--text-dim); font-size: 13px;">No data yet...</div>';
-        }
-
-        function updateTimeline(timeline) {
-            const container = document.getElementById('timeline');
-            const recent = timeline.slice(-10).reverse();
-
-            let html = '';
-            for (const entry of recent) {
-                const activities = entry.activities.join(', ');
-                const objects = entry.objects.length ? ` — holding: ${entry.objects.join(', ')}` : '';
-                html += `
-                    <div class="timeline-entry">
-                        <div class="timeline-time">${entry.time}</div>
-                        <div class="timeline-desc">${entry.otters} otter(s): ${activities}${objects}</div>
-                    </div>
-                `;
-            }
-
-            container.innerHTML = html || '<div style="color: var(--text-dim); font-size: 13px;">Waiting for detections...</div>';
-        }
-
-        function updateDashboard(stats) {
-            // Session summary
-            document.getElementById('summaryFrames').textContent = stats.total_frames;
-
-            const actDist = stats.activity_distribution;
-            const objDist = stats.object_distribution;
-
-            if (Object.keys(actDist).length > 0) {
-                const topAct = Object.entries(actDist).sort((a, b) => b[1] - a[1])[0];
-                document.getElementById('summaryActivity').textContent = topAct[0];
-            }
-
-            if (Object.keys(objDist).length > 0) {
-                const topObj = Object.entries(objDist).sort((a, b) => b[1] - a[1])[0];
-                document.getElementById('summaryObject').textContent = topObj[0];
-            }
-
-            const otterHistory = stats.otter_count_history;
-            if (otterHistory.length > 0) {
-                const avg = (otterHistory.reduce((a, b) => a + b, 0) / otterHistory.length).toFixed(1);
-                document.getElementById('summaryAvgOtters').textContent = avg;
+                // Label
+                let lb=`Otter #${d.otter_id+1}`;
+                if(d.activity&&d.activity!=='active')lb+=`  ${d.activity}`;
+                if(d.object&&d.object!=='none')lb+=`  [${d.object}]`;
+                ctx.font='600 12px "Outfit",sans-serif';
+                const tw=ctx.measureText(lb).width;
+                const lw=tw+14,lh=22;
+                let lx=Math.max(4,Math.min(x1,c.width-lw-4));
+                let ly=y1-lh-3;
+                if(ly<4)ly=y2+4;
+                if(ly+lh>c.height-4)ly=y1+4;
+                ctx.fillStyle=col+'e0';
+                ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,5);ctx.fill();
+                ctx.fillStyle='#fff';ctx.fillText(lb,lx+7,ly+15);
             }
         }
+
+        async function stopStream(){
+            if(overlayWs){overlayWs.close();overlayWs=null}
+            if(statsInterval)clearInterval(statsInterval);
+            const o1=document.getElementById('ytPlayer');if(o1)o1.remove();
+            const o2=document.getElementById('localPlayer');if(o2)o2.remove();
+            await fetch('/api/stop',{method:'POST'});
+            document.getElementById('statusPill').classList.remove('live');
+            document.getElementById('statusText').textContent='Offline';
+            document.getElementById('placeholder').classList.remove('hidden');
+            document.getElementById('overlayCanvas').getContext('2d').clearRect(0,0,9999,9999);
+            document.getElementById('chipFps').textContent='0 fps';
+            document.getElementById('chipOtters').textContent='0 otters';
+        }
+
+        async function askQuestion(){
+            const i=document.getElementById('qaInput'),a=document.getElementById('qaAnswer');
+            if(!i.value.trim())return;
+            a.textContent='Thinking...';a.classList.add('loading','visible');
+            try{
+                const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:i.value})});
+                const d=await r.json();
+                a.textContent=d.answer;a.classList.remove('loading');
+            }catch(e){a.textContent='Error: '+e.message;a.classList.remove('loading')}
+        }
+        document.getElementById('qaInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askQuestion()}});
+        // Auto-resize textarea
+        document.getElementById('qaInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
+
+        function startStatsPolling(){
+            if(statsInterval)clearInterval(statsInterval);
+            statsInterval=setInterval(async()=>{
+                try{
+                    const r=await fetch('/api/stats');const s=await r.json();
+                    document.getElementById('statTotal').textContent=s.total_inferences;
+                    updateBars(s.activity_distribution);
+                    updateTimeline(s.recent_timeline);
+                }catch(e){}
+            },2000);
+        }
+
+        function updateBars(d){
+            const c=document.getElementById('activityBars');
+            const t=Object.values(d).reduce((a,b)=>a+b,0)||1;
+            let h='';
+            for(const[a,n]of Object.entries(d).sort((a,b)=>b[1]-a[1])){
+                const p=((n/t)*100).toFixed(1);
+                h+=`<div class="bar-item"><div class="bar-top"><span class="name">${a}</span><span class="pct">${p}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${actColors[a]||'#8e8e93'}"></div></div></div>`;
+            }
+            c.innerHTML=h||'<div style="color:var(--text-tertiary);font-size:13px">No data yet</div>';
+        }
+
+        function updateTimeline(tl){
+            const c=document.getElementById('timeline');
+            let h='';
+            for(const e of(tl||[]).slice(-8).reverse()){
+                const a=e.activities.join(', ');
+                const o=e.objects&&e.objects.length?` — ${e.objects.join(', ')}`:'';
+                h+=`<div class="timeline-item"><div class="timeline-time">${e.time}</div><div class="timeline-desc">${e.otters} otter(s): ${a}${o}</div></div>`;
+            }
+            c.innerHTML=h||'<div style="color:var(--text-tertiary);font-size:13px">Waiting for data...</div>';
+        }
+
+        loadVideoList();
     </script>
 </body>
 </html>

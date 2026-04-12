@@ -1,254 +1,298 @@
 """
-OtterVision Web Server
-YOLO segments otters every frame (fast).
-LLaVA auto-labels activity every few seconds + detailed Q&A on demand.
+OtterVision Web Server — YOLO + Qwen + Annotation
+GPU 0: YOLOv8s-seg — segmentation
+GPU 1: Qwen2.5-VL-7B — activity labels + Q&A
 """
 
 import asyncio
-import base64
 import time
-from collections import Counter, deque
-
 import cv2
 import numpy as np
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+import subprocess
+import threading
+import logging
+import os
+from pathlib import Path
+from collections import deque, Counter
+from concurrent.futures import ThreadPoolExecutor
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from config import (
-    DISPLAY_FPS,
-    HOST,
-    INFERENCE_FPS,
-    PORT,
-    STATIC_DIR,
-    TEMPLATE_DIR,
-    WEBSOCKET_FRAME_INTERVAL,
-    YOUTUBE_LIVE_URL,
-)
-from modules.live_segmenter import LiveSegmenter, OtterDetection
-from modules.video_pipeline import VideoPipeline
-from modules.vlm_qa import OtterVLM
+from config import HOST, PORT, STATIC_DIR, TEMPLATE_DIR, YOUTUBE_LIVE_URL, VIDEO_DIR
+from modules.yolo_segmenter import EnsembleSegmenter
+from modules.vlm_engine import VLMEngine
+from modules.label_reviewer import add_review_routes
+from modules.annotator import add_annotator_routes
+
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 app = FastAPI(title="OtterVision")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
+qa_executor = ThreadPoolExecutor(max_workers=1)
 
 state = {
-    "video": None,
-    "segmenter": None,
-    "vlm": None,
-    "current_frame": None,
-    "running": False,
+    "yolo": None, "vlm": None, "running": False,
+    "current_frame": None, "latest_detections": [],
+    "inference_fps": 0, "frame_count": 0,
+    "ffmpeg_proc": None, "video_width": 1280, "video_height": 720,
     "stats": {
-        "fps": 0,
-        "total_frames": 0,
-        "otters_detected": 0,
+        "total_inferences": 0, "otters_detected": 0,
         "activity_history": deque(maxlen=500),
-        "object_history": deque(maxlen=500),
         "otter_count_history": deque(maxlen=200),
         "timeline": deque(maxlen=100),
     }
 }
 
 
+def _get_stream_url(url):
+    result = subprocess.run(["yt-dlp", "-f", "best[height<=720]", "-g", url],
+                            capture_output=True, text=True, timeout=30)
+    return result.stdout.strip().split("\n")[0] if result.returncode == 0 else ""
+
+
+def _start_ffmpeg(source):
+    w, h = 1280, 720
+    try:
+        p = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
+                            "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", source],
+                           capture_output=True, text=True, timeout=15)
+        if p.returncode == 0 and "x" in p.stdout.strip():
+            parts = p.stdout.strip().split("\n")[0].split("x")
+            w, h = int(parts[0]), int(parts[1])
+    except:
+        pass
+    state["video_width"], state["video_height"] = w, h
+    print(f"[ffmpeg] {w}x{h}")
+    cmd = ["ffmpeg"]
+    if source.startswith("http"):
+        cmd += ["-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"]
+    else:
+        cmd += ["-re"]
+    cmd += ["-i", source, "-f", "rawvideo", "-pix_fmt", "bgr24", "-an", "-sn", "-v", "warning", "-"]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=w*h*3*10)
+    state["ffmpeg_proc"] = proc
+    def _log():
+        for line in proc.stderr:
+            l = line.decode("utf-8", errors="replace").strip()
+            if l: print(f"[ffmpeg] {l}")
+    threading.Thread(target=_log, daemon=True).start()
+
+
+def _frame_reader():
+    """Read frames as fast as possible, just overwrite current_frame with the latest."""
+    print("[FrameReader] Waiting...")
+    while True:
+        if not state["running"]:
+            time.sleep(0.1)
+            continue
+        proc = state["ffmpeg_proc"]
+        if proc is None:
+            time.sleep(0.1)
+            continue
+        w, h = state["video_width"], state["video_height"]
+        frame_size = w * h * 3
+        try:
+            raw = proc.stdout.read(frame_size)
+        except (ValueError, OSError):
+            time.sleep(0.1)
+            continue
+        if len(raw) != frame_size:
+            if proc.poll() is not None:
+                print("[FrameReader] Stream ended, waiting...")
+                state["running"] = False
+                time.sleep(0.5)
+                continue
+            time.sleep(0.1)
+            continue
+        state["current_frame"] = np.frombuffer(raw, dtype=np.uint8).reshape((h, w, 3))
+        state["frame_count"] += 1
+        if state["frame_count"] == 1:
+            print(f"[FrameReader] First frame! {w}x{h}")
+        elif state["frame_count"] % 500 == 0:
+            print(f"[FrameReader] {state['frame_count']} frames")
+
+
+def _inference_loop():
+    """Grab the latest frame and run YOLO as fast as possible. No waiting, no frame counting."""
+    print("[Inference] Waiting...")
+    times = deque(maxlen=60)
+    while True:
+        if not state["running"] or state["current_frame"] is None:
+            time.sleep(0.01)
+            continue
+
+        frame = state["current_frame"].copy()
+        try:
+            t0 = time.time()
+            detections = state["yolo"].segment_frame(frame)
+            t1 = time.time()
+
+            vlm_labels = state["vlm"].get_activity_labels(frame, len(detections))
+
+            for det in detections:
+                if det.otter_id in vlm_labels:
+                    label = vlm_labels[det.otter_id]
+                    det.activity = label["activity"]
+                    det.held_object = label["object"]
+                elif vlm_labels:
+                    sorted_keys = sorted(vlm_labels.keys())
+                    if det.otter_id < len(sorted_keys):
+                        label = vlm_labels[sorted_keys[det.otter_id]]
+                        det.activity = label["activity"]
+                        det.held_object = label["object"]
+
+            det_json = state["yolo"].detections_to_json(detections)
+            state["latest_detections"] = det_json
+
+            s = state["stats"]
+            s["total_inferences"] += 1
+            s["otters_detected"] = len(detections)
+            s["otter_count_history"].append(len(detections))
+            for d in det_json:
+                if d["activity"] != "active":
+                    s["activity_history"].append(d["activity"])
+            if det_json:
+                s["timeline"].append({
+                    "time": time.strftime("%H:%M:%S"),
+                    "otters": len(det_json),
+                    "activities": [d["activity"] for d in det_json],
+                    "objects": [d["object"] for d in det_json if d["object"] != "none"],
+                })
+
+            times.append(time.time())
+            if len(times) > 1:
+                state["inference_fps"] = len(times) / max(times[-1] - times[0], 0.001)
+
+            yolo_ms = (t1 - t0) * 1000
+
+            if s["total_inferences"] == 1:
+                print(f"[Inference] First result! {len(detections)} otters | YOLO: {yolo_ms:.0f}ms")
+            elif s["total_inferences"] % 100 == 0:
+                print(f"[Inference] {s['total_inferences']} | {state['inference_fps']:.1f} fps | {s['otters_detected']} otters | YOLO: {yolo_ms:.0f}ms")
+
+        except Exception as e:
+            print(f"[Inference] Error: {e}")
+            import traceback
+            traceback.print_exc()
+            time.sleep(0.2)
+
+
+def _stop():
+    state["running"] = False
+    proc = state["ffmpeg_proc"]
+    state["ffmpeg_proc"] = None
+    if proc:
+        try: proc.kill()
+        except: pass
+    state["current_frame"] = None
+    state["frame_count"] = 0
+    state["latest_detections"] = []
+
+
 def initialize():
-    print("[App] Loading models...")
-
-    state["segmenter"] = LiveSegmenter()
-    state["segmenter"].load_model()
-
-    # VLM loads lazily on first frame or first question
-    state["vlm"] = OtterVLM()
-
+    print("[App] Loading YOLO...")
+    state["yolo"] = EnsembleSegmenter()
+    state["yolo"].load_model()
+    print("[App] Initializing VLM (loads lazily on GPU 1)...")
+    state["vlm"] = VLMEngine()
+    add_review_routes(app)
+    add_annotator_routes(app)
+    threading.Thread(target=_frame_reader, daemon=True).start()
+    threading.Thread(target=_inference_loop, daemon=True).start()
     print("[App] Ready.")
+    print("[App] Routes: / (main) | /annotate (label) | /review (check labels)")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
+@app.get("/api/videos")
+async def list_videos():
+    exts = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
+    vd = Path(VIDEO_DIR)
+    videos = sorted([f.name for f in vd.iterdir() if f.suffix.lower() in exts]) if vd.exists() else []
+    return JSONResponse({"videos": videos})
+
+@app.get("/api/video/{filename}")
+async def serve_video(filename: str):
+    path = Path(VIDEO_DIR) / filename
+    if not path.exists(): return JSONResponse({"error": "Not found"}, status_code=404)
+    return FileResponse(str(path), media_type="video/mp4", headers={"Accept-Ranges": "bytes"})
 
 @app.post("/api/start")
 async def start_stream(request: Request):
     body = await request.json()
     source = body.get("source", "youtube")
     url = body.get("url", YOUTUBE_LIVE_URL)
-    path = body.get("path", "")
-
-    if state["video"] is not None:
-        state["video"].stop()
-
-    state["video"] = VideoPipeline()
-
+    filename = body.get("filename", "")
+    _stop()
+    await asyncio.sleep(0.3)
     if source == "youtube":
-        success = state["video"].open_youtube(url)
+        stream_url = await asyncio.get_event_loop().run_in_executor(None, _get_stream_url, url)
+        if not stream_url: return JSONResponse({"error": "Could not get stream URL"}, status_code=500)
+        _start_ffmpeg(stream_url)
     elif source == "local":
-        success = state["video"].open_local(path)
-    else:
-        return JSONResponse({"error": f"Unknown source: {source}"}, status_code=400)
-
-    if not success:
-        return JSONResponse({"error": "Failed to open video source"}, status_code=500)
-
-    state["video"].start()
+        path = str(Path(VIDEO_DIR) / filename)
+        if not os.path.exists(path): return JSONResponse({"error": f"Not found: {filename}"}, status_code=404)
+        _start_ffmpeg(path)
     state["running"] = True
-    return JSONResponse({"status": "started", "source": source})
-
+    return JSONResponse({"status": "started", "width": state["video_width"], "height": state["video_height"]})
 
 @app.post("/api/stop")
 async def stop_stream():
-    state["running"] = False
-    if state["video"]:
-        state["video"].stop()
+    _stop()
     return JSONResponse({"status": "stopped"})
-
 
 @app.post("/api/ask")
 async def ask_question(request: Request):
     body = await request.json()
     question = body.get("question", "")
     frame = state["current_frame"]
-
-    if frame is None:
-        return JSONResponse({"answer": "No video frame available. Start a stream first."})
-    if not question.strip():
-        return JSONResponse({"answer": "Please ask a question."})
-
-    vlm = state["vlm"]
-    answer = vlm.ask_detailed(frame, question)
+    if frame is None: return JSONResponse({"answer": "No video frame available."})
+    if not question.strip(): return JSONResponse({"answer": "Please ask a question."})
+    context = "; ".join([f"Otter {d['otter_id']+1}: {d['activity']}" for d in state["latest_detections"]])
+    print(f"[QA] Q: {question}")
+    answer = await asyncio.get_event_loop().run_in_executor(qa_executor, state["vlm"].ask_detailed, frame.copy(), question, context)
+    print(f"[QA] A: {answer[:100]}...")
     return JSONResponse({"answer": answer})
-
 
 @app.get("/api/stats")
 async def get_stats():
-    stats = state["stats"]
+    s = state["stats"]
     return JSONResponse({
-        "fps": round(stats["fps"], 1),
-        "total_frames": stats["total_frames"],
-        "otters_detected": stats["otters_detected"],
-        "activity_distribution": dict(Counter(stats["activity_history"])),
-        "object_distribution": dict(Counter(stats["object_history"])),
-        "otter_count_history": list(stats["otter_count_history"]),
-        "recent_timeline": list(stats["timeline"]),
+        "inference_fps": round(state["inference_fps"], 1),
+        "total_inferences": s["total_inferences"],
+        "otters_detected": s["otters_detected"],
+        "activity_distribution": dict(Counter(s["activity_history"])),
+        "otter_count_history": list(s["otter_count_history"]),
+        "recent_timeline": list(s["timeline"]),
     })
 
-
-@app.websocket("/ws/video")
-async def video_websocket(websocket: WebSocket):
+@app.websocket("/ws/overlay")
+async def overlay_ws(websocket: WebSocket):
     await websocket.accept()
-    print("[WS] Client connected.")
-
-    frame_count = 0
-    last_inference = 0
-    inference_interval = 1.0 / INFERENCE_FPS
-    fps_times = deque(maxlen=30)
-
     try:
         while True:
-            if not state["running"] or state["video"] is None:
-                await asyncio.sleep(0.1)
+            if not state["running"]:
+                await asyncio.sleep(0.5)
                 continue
-
-            frame = state["video"].get_frame(timeout=0.5)
-            if frame is None:
-                await asyncio.sleep(0.05)
-                continue
-
-            frame_count += 1
-            now = time.time()
-            state["current_frame"] = frame.copy()
-            annotated = frame.copy()
-
-            if now - last_inference >= inference_interval:
-                last_inference = now
-
-                try:
-                    # 1. YOLO segmentation (fast, every frame)
-                    detections = state["segmenter"].segment_frame(frame)
-
-                    # 2. VLM auto-labeling (runs every few seconds in background)
-                    vlm = state["vlm"]
-                    vlm_labels = vlm.get_activity_labels(frame)
-
-                    # 3. Apply VLM labels to YOLO detections
-                    for det in detections:
-                        if det.otter_id in vlm_labels:
-                            label = vlm_labels[det.otter_id]
-                            det.activity = label["activity"]
-                            det.activity_conf = 0.9
-                            det.held_object = label["object"]
-                            det.object_conf = 0.9
-                        elif vlm_labels:
-                            # If VLM found fewer/more otters than YOLO, try matching by order
-                            sorted_keys = sorted(vlm_labels.keys())
-                            if det.otter_id < len(sorted_keys):
-                                key = sorted_keys[det.otter_id]
-                                label = vlm_labels[key]
-                                det.activity = label["activity"]
-                                det.activity_conf = 0.8
-                                det.held_object = label["object"]
-                                det.object_conf = 0.8
-
-                    # 4. Draw annotations
-                    annotated = state["segmenter"].draw_detections(frame, detections)
-
-                    # Update stats
-                    s = state["stats"]
-                    s["total_frames"] = frame_count
-                    s["otters_detected"] = len(detections)
-                    s["otter_count_history"].append(len(detections))
-
-                    for d in detections:
-                        if d.activity != "unknown":
-                            s["activity_history"].append(d.activity)
-                        if d.held_object != "none":
-                            s["object_history"].append(d.held_object)
-
-                    if detections:
-                        s["timeline"].append({
-                            "time": time.strftime("%H:%M:%S"),
-                            "otters": len(detections),
-                            "activities": [d.activity for d in detections],
-                            "objects": [d.held_object for d in detections if d.held_object != "none"],
-                        })
-
-                except Exception as e:
-                    cv2.putText(annotated, f"Error: {str(e)[:60]}", (10, 30),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-
-            # FPS
-            fps_times.append(now)
-            if len(fps_times) > 1:
-                state["stats"]["fps"] = len(fps_times) / max(fps_times[-1] - fps_times[0], 0.001)
-
-            cv2.putText(annotated, f"FPS: {state['stats']['fps']:.1f}",
-                        (10, annotated.shape[0] - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-
-            _, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 70])
             await websocket.send_json({
-                "type": "frame",
-                "data": base64.b64encode(buf).decode("utf-8"),
-                "stats": {
-                    "fps": round(state["stats"]["fps"], 1),
-                    "otters": state["stats"]["otters_detected"],
-                    "frame": frame_count,
-                }
+                "type": "detections",
+                "detections": state["latest_detections"],
+                "inference_fps": round(state["inference_fps"], 1),
             })
-
-            await asyncio.sleep(WEBSOCKET_FRAME_INTERVAL)
-
-    except WebSocketDisconnect:
-        print("[WS] Client disconnected.")
-    except Exception as e:
-        print(f"[WS] Error: {e}")
-
+            await asyncio.sleep(0.3)
+    except WebSocketDisconnect: pass
+    except Exception as e: print(f"[WS] Error: {e}")
 
 @app.on_event("startup")
 async def startup():
     initialize()
-
 
 if __name__ == "__main__":
     import uvicorn
