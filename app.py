@@ -2,6 +2,8 @@
 OtterVision Web Server — YOLO + Qwen + Annotation
 GPU 0: YOLOv8s-seg — segmentation
 GPU 1: Qwen2.5-VL-7B — activity labels + Q&A
+
+Live settings: adjust conf, imgsz, max_det via /api/settings
 """
 
 import asyncio
@@ -21,7 +23,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from config import HOST, PORT, STATIC_DIR, TEMPLATE_DIR, YOUTUBE_LIVE_URL, VIDEO_DIR
+from config import HOST, PORT, STATIC_DIR, TEMPLATE_DIR, YOUTUBE_LIVE_URL, VIDEO_DIR, YOLO_CONF, YOLO_IMG_SIZE
 from modules.yolo_segmenter import EnsembleSegmenter
 from modules.vlm_engine import VLMEngine
 from modules.label_reviewer import add_review_routes
@@ -33,6 +35,18 @@ app = FastAPI(title="OtterVision")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 qa_executor = ThreadPoolExecutor(max_workers=1)
+
+# Live-adjustable settings
+live_settings = {
+    "conf": YOLO_CONF,
+    "imgsz": YOLO_IMG_SIZE,
+    "max_det": 10,
+    "half": True,
+    "show_masks": True,
+    "show_labels": True,
+    "vlm_enabled": True,
+    "vlm_interval": 4.0,
+}
 
 state = {
     "yolo": None, "vlm": None, "running": False,
@@ -83,7 +97,7 @@ def _start_ffmpeg(source):
 
 
 def _frame_reader():
-    """Read frames as fast as possible, just overwrite current_frame with the latest."""
+    """Read frames as fast as possible, just overwrite current_frame."""
     print("[FrameReader] Waiting...")
     while True:
         if not state["running"]:
@@ -117,7 +131,7 @@ def _frame_reader():
 
 
 def _inference_loop():
-    """Grab the latest frame and run YOLO as fast as possible. No waiting, no frame counting."""
+    """Grab latest frame, run YOLO with live settings."""
     print("[Inference] Waiting...")
     times = deque(maxlen=60)
     while True:
@@ -128,24 +142,34 @@ def _inference_loop():
         frame = state["current_frame"].copy()
         try:
             t0 = time.time()
-            detections = state["yolo"].segment_frame(frame)
+            # Pass live settings to segmenter
+            detections = state["yolo"].segment_frame(
+                frame,
+                conf=live_settings["conf"],
+                imgsz=live_settings["imgsz"],
+                half=live_settings["half"],
+                max_det=live_settings["max_det"],
+            )
             t1 = time.time()
 
-            vlm_labels = state["vlm"].get_activity_labels(frame, len(detections))
-
-            for det in detections:
-                if det.otter_id in vlm_labels:
-                    label = vlm_labels[det.otter_id]
-                    det.activity = label["activity"]
-                    det.held_object = label["object"]
-                elif vlm_labels:
-                    sorted_keys = sorted(vlm_labels.keys())
-                    if det.otter_id < len(sorted_keys):
-                        label = vlm_labels[sorted_keys[det.otter_id]]
+            if live_settings["vlm_enabled"]:
+                vlm_labels = state["vlm"].get_activity_labels(frame, len(detections))
+                for det in detections:
+                    if det.otter_id in vlm_labels:
+                        label = vlm_labels[det.otter_id]
                         det.activity = label["activity"]
                         det.held_object = label["object"]
+                    elif vlm_labels:
+                        sorted_keys = sorted(vlm_labels.keys())
+                        if det.otter_id < len(sorted_keys):
+                            label = vlm_labels[sorted_keys[det.otter_id]]
+                            det.activity = label["activity"]
+                            det.held_object = label["object"]
 
-            det_json = state["yolo"].detections_to_json(detections)
+            det_json = state["yolo"].detections_to_json(
+                detections,
+                include_masks=live_settings["show_masks"],
+            )
             state["latest_detections"] = det_json
 
             s = state["stats"]
@@ -153,7 +177,7 @@ def _inference_loop():
             s["otters_detected"] = len(detections)
             s["otter_count_history"].append(len(detections))
             for d in det_json:
-                if d["activity"] != "active":
+                if d.get("activity", "active") != "active":
                     s["activity_history"].append(d["activity"])
             if det_json:
                 s["timeline"].append({
@@ -170,9 +194,9 @@ def _inference_loop():
             yolo_ms = (t1 - t0) * 1000
 
             if s["total_inferences"] == 1:
-                print(f"[Inference] First result! {len(detections)} otters | YOLO: {yolo_ms:.0f}ms")
+                print(f"[Inference] First! {len(detections)} otters | YOLO: {yolo_ms:.0f}ms | conf={live_settings['conf']}")
             elif s["total_inferences"] % 100 == 0:
-                print(f"[Inference] {s['total_inferences']} | {state['inference_fps']:.1f} fps | {s['otters_detected']} otters | YOLO: {yolo_ms:.0f}ms")
+                print(f"[Inference] {s['total_inferences']} | {state['inference_fps']:.1f} fps | {s['otters_detected']} otters | YOLO: {yolo_ms:.0f}ms | conf={live_settings['conf']}")
 
         except Exception as e:
             print(f"[Inference] Error: {e}")
@@ -206,6 +230,10 @@ def initialize():
     print("[App] Ready.")
     print("[App] Routes: / (main) | /annotate (label) | /review (check labels)")
 
+
+# ============================================================
+# ROUTES
+# ============================================================
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -273,6 +301,56 @@ async def get_stats():
         "recent_timeline": list(s["timeline"]),
     })
 
+# ============================================================
+# LIVE SETTINGS API
+# ============================================================
+
+@app.get("/api/settings")
+async def get_settings():
+    """Return current live settings."""
+    return JSONResponse(live_settings)
+
+@app.post("/api/settings")
+async def update_settings(request: Request):
+    """Update live settings. Only provided keys are changed."""
+    body = await request.json()
+
+    valid_keys = {
+        "conf": (float, 0.01, 0.99),
+        "imgsz": (int, 320, 1280),
+        "max_det": (int, 1, 50),
+        "half": (bool, None, None),
+        "show_masks": (bool, None, None),
+        "show_labels": (bool, None, None),
+        "vlm_enabled": (bool, None, None),
+        "vlm_interval": (float, 1.0, 30.0),
+    }
+
+    changed = {}
+    for key, value in body.items():
+        if key not in valid_keys:
+            continue
+        typ, min_val, max_val = valid_keys[key]
+        try:
+            value = typ(value)
+            if min_val is not None and value < min_val:
+                value = min_val
+            if max_val is not None and value > max_val:
+                value = max_val
+            live_settings[key] = value
+            changed[key] = value
+        except (ValueError, TypeError):
+            continue
+
+    if changed:
+        print(f"[Settings] Updated: {changed}")
+
+    return JSONResponse({"status": "ok", "settings": live_settings})
+
+# ============================================================
+# WEBSOCKET
+# ============================================================
+
 @app.websocket("/ws/overlay")
 async def overlay_ws(websocket: WebSocket):
     await websocket.accept()
@@ -285,8 +363,13 @@ async def overlay_ws(websocket: WebSocket):
                 "type": "detections",
                 "detections": state["latest_detections"],
                 "inference_fps": round(state["inference_fps"], 1),
+                "settings": {
+                    "conf": live_settings["conf"],
+                    "show_masks": live_settings["show_masks"],
+                    "show_labels": live_settings["show_labels"],
+                },
             })
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.15)
     except WebSocketDisconnect: pass
     except Exception as e: print(f"[WS] Error: {e}")
 

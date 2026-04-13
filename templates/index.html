@@ -343,6 +343,59 @@
         }
         .timeline-desc { margin-top: 3px; color: var(--text-secondary); line-height: 1.4; }
 
+        /* ===== SETTINGS PANEL ===== */
+        .settings-toggle {
+            position: fixed; top: 12px; right: 12px; z-index: 1001;
+            background: rgba(0,0,0,0.7); color: #fff; border: none;
+            border-radius: 8px; padding: 8px 14px; cursor: pointer;
+            font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+            backdrop-filter: blur(8px); transition: all 0.2s;
+        }
+        .settings-toggle:hover { background: rgba(0,0,0,0.85); }
+        .settings-panel {
+            display: none; position: fixed; top: 50px; right: 12px; z-index: 1000;
+            background: rgba(15,15,15,0.92); color: #fff; padding: 18px 20px;
+            border-radius: 14px; font-family: 'Outfit', sans-serif; font-size: 13px;
+            min-width: 270px; backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .settings-panel.open { display: block; }
+        .settings-title {
+            font-weight: 700; font-size: 15px; margin-bottom: 14px; letter-spacing: -0.3px;
+        }
+        .setting-group { margin-bottom: 14px; }
+        .setting-label {
+            display: flex; justify-content: space-between; margin-bottom: 4px;
+        }
+        .setting-label span:first-child { color: #aaa; }
+        .setting-val { font-weight: 600; color: #0071e3; }
+        .setting-range {
+            width: 100%; accent-color: #0071e3;
+            height: 4px; cursor: pointer;
+        }
+        .setting-hint {
+            display: flex; justify-content: space-between;
+            font-size: 10px; color: #555; margin-top: 2px;
+        }
+        .setting-toggles {
+            display: flex; flex-direction: column; gap: 8px;
+            padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .setting-toggles label {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+        }
+        .setting-toggles input { accent-color: #34c759; }
+        .settings-stats {
+            padding-top: 10px; margin-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 11px; color: #888;
+        }
+        .settings-stats div { margin-bottom: 2px; }
+        .settings-stats .val { font-weight: 600; }
+        .settings-stats .val.g { color: #34c759; }
+        .settings-stats .val.b { color: #0071e3; }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 900px) {
             .main-layout { padding: 16px; }
@@ -429,7 +482,7 @@
                 <div class="card">
                     <div class="card-header">Live Statistics</div>
                     <div class="card-body">
-                        <div class="stat-row"><span class="stat-label">Ensemble FPS</span><span class="stat-value green" id="statFps">0</span></div>
+                        <div class="stat-row"><span class="stat-label">Inference FPS</span><span class="stat-value green" id="statFps">0</span></div>
                         <div class="stat-row"><span class="stat-label">Otters Detected</span><span class="stat-value amber" id="statOtters">0</span></div>
                         <div class="stat-row"><span class="stat-label">Total Inferences</span><span class="stat-value blue" id="statTotal">0</span></div>
                     </div>
@@ -450,10 +503,91 @@
         </div>
     </div>
 
+    <!-- SETTINGS PANEL -->
+    <button class="settings-toggle" onclick="toggleSettings()">⚙ Settings</button>
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-title">Live Settings</div>
+
+        <div class="setting-group">
+            <div class="setting-label">
+                <span>Confidence Threshold</span>
+                <span class="setting-val" id="confVal">0.40</span>
+            </div>
+            <input type="range" class="setting-range" id="confSlider" min="1" max="99" value="40"
+                   oninput="updateSetting('conf', this.value/100)">
+            <div class="setting-hint"><span>More detections</span><span>Fewer false positives</span></div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-label">
+                <span>Inference Resolution</span>
+                <span class="setting-val" id="imgsVal">960</span>
+            </div>
+            <input type="range" class="setting-range" id="imgsSlider" min="320" max="1280" step="32" value="960"
+                   oninput="updateSetting('imgsz', parseInt(this.value))">
+            <div class="setting-hint"><span>Faster</span><span>More accurate</span></div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-label">
+                <span>Max Detections</span>
+                <span class="setting-val" id="maxDetVal">10</span>
+            </div>
+            <input type="range" class="setting-range" id="maxDetSlider" min="1" max="30" value="10"
+                   oninput="updateSetting('max_det', parseInt(this.value))">
+        </div>
+
+        <div class="setting-toggles">
+            <label><input type="checkbox" id="showMasks" checked onchange="updateSetting('show_masks', this.checked)"> Show Segmentation Masks</label>
+            <label><input type="checkbox" id="showLabels" checked onchange="updateSetting('show_labels', this.checked)"> Show Labels</label>
+            <label><input type="checkbox" id="vlmEnabled" checked onchange="updateSetting('vlm_enabled', this.checked)"> VLM Activity Labels</label>
+            <label><input type="checkbox" id="halfPrecision" checked onchange="updateSetting('half', this.checked)"> Half Precision (FP16)</label>
+        </div>
+
+        <div class="settings-stats">
+            <div>Inference FPS: <span class="val g" id="sStatFps">--</span></div>
+            <div>Otters: <span class="val b" id="sStatOtters">--</span></div>
+            <div>Total: <span class="val" id="sStatTotal">--</span></div>
+        </div>
+    </div>
+
     <script>
-        let overlayWs=null, statsInterval=null, inferenceWidth=1280, inferenceHeight=720, currentSource='youtube', panelOpen=false;
+        let overlayWs=null, statsInterval=null, inferenceWidth=1280, inferenceHeight=720, currentSource='youtube', panelOpen=false, settingsOpen=false;
         const actColors={floating:'#34c759',diving:'#5856d6',eating:'#ff9f0a',grooming:'#ff3b30',playing:'#af52de',socializing:'#30b0c7',resting:'#8e8e93',exploring:'#ff6723',active:'#0071e3'};
 
+        /* ===== SETTINGS ===== */
+        function toggleSettings(){
+            settingsOpen=!settingsOpen;
+            document.getElementById('settingsPanel').classList.toggle('open',settingsOpen);
+        }
+
+        async function loadSettings(){
+            try{
+                const r=await fetch('/api/settings');
+                const s=await r.json();
+                document.getElementById('confSlider').value=Math.round(s.conf*100);
+                document.getElementById('confVal').textContent=s.conf.toFixed(2);
+                document.getElementById('imgsSlider').value=s.imgsz;
+                document.getElementById('imgsVal').textContent=s.imgsz;
+                document.getElementById('maxDetSlider').value=s.max_det;
+                document.getElementById('maxDetVal').textContent=s.max_det;
+                document.getElementById('showMasks').checked=s.show_masks;
+                document.getElementById('showLabels').checked=s.show_labels;
+                document.getElementById('vlmEnabled').checked=s.vlm_enabled;
+                document.getElementById('halfPrecision').checked=s.half;
+            }catch(e){}
+        }
+
+        async function updateSetting(key, value){
+            if(key==='conf')document.getElementById('confVal').textContent=value.toFixed(2);
+            else if(key==='imgsz')document.getElementById('imgsVal').textContent=value;
+            else if(key==='max_det')document.getElementById('maxDetVal').textContent=value;
+            try{
+                await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:value})});
+            }catch(e){}
+        }
+
+        /* ===== SOURCE ===== */
         function setSource(s){
             currentSource=s;
             document.querySelectorAll('.source-toggle button').forEach(e=>e.classList.remove('active'));
@@ -472,6 +606,7 @@
             document.getElementById('panelToggle').classList.toggle('active',panelOpen);
         }
 
+        /* ===== STREAM ===== */
         async function startStream(){
             const wrap=document.getElementById('videoWrap');
             let body={};
@@ -498,6 +633,7 @@
             }catch(e){alert('Failed: '+e.message)}
         }
 
+        /* ===== WEBSOCKET ===== */
         function connectOverlayWs(){
             if(overlayWs)overlayWs.close();
             const p=location.protocol==='https:'?'wss:':'ws:';
@@ -505,19 +641,24 @@
             overlayWs.onmessage=ev=>{
                 const m=JSON.parse(ev.data);
                 if(m.type==='detections'){
-                    drawOverlay(m.detections);
+                    const showMasks=m.settings?m.settings.show_masks:true;
+                    const showLabels=m.settings?m.settings.show_labels:true;
+                    drawOverlay(m.detections,showMasks,showLabels);
                     document.getElementById('chipOtters').textContent=m.detections.length+' otter'+(m.detections.length!==1?'s':'');
                     document.getElementById('statOtters').textContent=m.detections.length;
+                    document.getElementById('sStatOtters').textContent=m.detections.length;
                     if(m.inference_fps!=null){
                         document.getElementById('chipFps').textContent=m.inference_fps.toFixed(0)+' fps';
                         document.getElementById('statFps').textContent=m.inference_fps.toFixed(0);
+                        document.getElementById('sStatFps').textContent=m.inference_fps.toFixed(0);
                     }
                 }
             };
             overlayWs.onclose=()=>{setTimeout(()=>{if(document.getElementById('statusPill').classList.contains('live'))connectOverlayWs()},3000)};
         }
 
-        function drawOverlay(dets){
+        /* ===== OVERLAY DRAWING ===== */
+        function drawOverlay(dets,showMasks,showLabels){
             const c=document.getElementById('overlayCanvas'),w=document.getElementById('videoWrap'),ctx=c.getContext('2d'),r=w.getBoundingClientRect();
             c.width=r.width;c.height=r.height;
             const sx=r.width/inferenceWidth,sy=r.height/inferenceHeight;
@@ -526,34 +667,37 @@
                 const col=actColors[d.activity]||'#0071e3';
                 const x1=d.bbox[0]*sx,y1=d.bbox[1]*sy,x2=d.bbox[2]*sx,y2=d.bbox[3]*sy;
                 // Polygon mask
-                if(d.polygon&&d.polygon.length>2){
+                if(showMasks&&d.polygon&&d.polygon.length>2){
                     ctx.beginPath();
                     ctx.moveTo(d.polygon[0][0]*sx,d.polygon[0][1]*sy);
                     for(let i=1;i<d.polygon.length;i++)ctx.lineTo(d.polygon[i][0]*sx,d.polygon[i][1]*sy);
                     ctx.closePath();
                     ctx.fillStyle=col+'25';ctx.fill();
                     ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
-                }else{
+                }else if(showMasks){
                     ctx.strokeStyle=col;ctx.lineWidth=2;
                     ctx.strokeRect(x1,y1,x2-x1,y2-y1);
                 }
                 // Label
-                let lb=`Otter #${d.otter_id+1}`;
-                if(d.activity&&d.activity!=='active')lb+=`  ${d.activity}`;
-                if(d.object&&d.object!=='none')lb+=`  [${d.object}]`;
-                ctx.font='600 12px "Outfit",sans-serif';
-                const tw=ctx.measureText(lb).width;
-                const lw=tw+14,lh=22;
-                let lx=Math.max(4,Math.min(x1,c.width-lw-4));
-                let ly=y1-lh-3;
-                if(ly<4)ly=y2+4;
-                if(ly+lh>c.height-4)ly=y1+4;
-                ctx.fillStyle=col+'e0';
-                ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,5);ctx.fill();
-                ctx.fillStyle='#fff';ctx.fillText(lb,lx+7,ly+15);
+                if(showLabels){
+                    let lb=`Otter #${d.otter_id+1}`;
+                    if(d.activity&&d.activity!=='active')lb+=`  ${d.activity}`;
+                    if(d.object&&d.object!=='none')lb+=`  [${d.object}]`;
+                    ctx.font='600 12px "Outfit",sans-serif';
+                    const tw=ctx.measureText(lb).width;
+                    const lw=tw+14,lh=22;
+                    let lx=Math.max(4,Math.min(x1,c.width-lw-4));
+                    let ly=y1-lh-3;
+                    if(ly<4)ly=y2+4;
+                    if(ly+lh>c.height-4)ly=y1+4;
+                    ctx.fillStyle=col+'e0';
+                    ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,5);ctx.fill();
+                    ctx.fillStyle='#fff';ctx.fillText(lb,lx+7,ly+15);
+                }
             }
         }
 
+        /* ===== STOP ===== */
         async function stopStream(){
             if(overlayWs){overlayWs.close();overlayWs=null}
             if(statsInterval)clearInterval(statsInterval);
@@ -568,6 +712,7 @@
             document.getElementById('chipOtters').textContent='0 otters';
         }
 
+        /* ===== Q&A ===== */
         async function askQuestion(){
             const i=document.getElementById('qaInput'),a=document.getElementById('qaAnswer');
             if(!i.value.trim())return;
@@ -579,15 +724,16 @@
             }catch(e){a.textContent='Error: '+e.message;a.classList.remove('loading')}
         }
         document.getElementById('qaInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askQuestion()}});
-        // Auto-resize textarea
         document.getElementById('qaInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
 
+        /* ===== STATS POLLING ===== */
         function startStatsPolling(){
             if(statsInterval)clearInterval(statsInterval);
             statsInterval=setInterval(async()=>{
                 try{
                     const r=await fetch('/api/stats');const s=await r.json();
                     document.getElementById('statTotal').textContent=s.total_inferences;
+                    document.getElementById('sStatTotal').textContent=s.total_inferences;
                     updateBars(s.activity_distribution);
                     updateTimeline(s.recent_timeline);
                 }catch(e){}
@@ -616,7 +762,9 @@
             c.innerHTML=h||'<div style="color:var(--text-tertiary);font-size:13px">Waiting for data...</div>';
         }
 
+        /* ===== INIT ===== */
         loadVideoList();
+        loadSettings();
     </script>
 </body>
 </html>
