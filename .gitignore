@@ -76,3 +76,13 @@ Thumbs.db
 *.tar
 *.tar.gz
 *.tar.xz
+# Conda / installers
+Miniconda3-latest-Linux-x86_64.sh
+*.sh
+miniconda*
+anaconda*
+.conda/
+conda/
+env/
+venv/
+.venv/

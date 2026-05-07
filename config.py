@@ -29,7 +29,7 @@ if NUM_GPUS > 0:
 YOLO_NANO_PATH = MODEL_DIR / "otter_yolo_nano.pt"
 YOLO_SMALL_PATH = MODEL_DIR / "otter_yolo_small.pt"
 YOLO_DEVICE = 0
-YOLO_CONF = 0.70
+YOLO_CONF = 0.30
 YOLO_IMG_SIZE = 640
 YOLO_IOU_MERGE = 0.35  # IoU threshold for merging duplicate detections
 

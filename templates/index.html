@@ -4,434 +4,125 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OtterVision</title>
-    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #f5f5f7;
-            --surface: #ffffff;
-            --surface-hover: #fafafa;
-            --border: #e5e5e7;
-            --border-light: #f0f0f2;
-            --text: #1d1d1f;
-            --text-secondary: #6e6e73;
-            --text-tertiary: #aeaeb2;
-            --accent: #0071e3;
-            --accent-hover: #0077ED;
-            --accent-light: rgba(0, 113, 227, 0.08);
-            --green: #34c759;
-            --green-light: rgba(52, 199, 89, 0.1);
-            --red: #ff3b30;
-            --amber: #ff9f0a;
-            --radius: 12px;
-            --radius-lg: 16px;
-            --radius-sm: 8px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
-            --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* ===== HEADER ===== */
-        .header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 32px;
-            background: rgba(255,255,255,0.72);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-bottom: 0.5px solid var(--border);
-            position: sticky; top: 0; z-index: 100;
-        }
-        .logo {
-            display: flex; align-items: center; gap: 10px;
-            font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
-        }
-        .logo-icon {
-            width: 34px; height: 34px; border-radius: 10px;
-            background: linear-gradient(135deg, #0071e3, #34c759);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; color: white;
-        }
-        .header-right { display: flex; align-items: center; gap: 16px; }
-        .status-pill {
-            display: flex; align-items: center; gap: 6px;
-            padding: 5px 14px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-            background: var(--bg); border: 0.5px solid var(--border);
-            color: var(--text-secondary);
-        }
-        .status-pill.live {
-            background: var(--green-light);
-            border-color: rgba(52,199,89,0.3);
-            color: #248a3d;
-        }
-        .status-dot {
-            width: 7px; height: 7px; border-radius: 50%;
-            background: var(--text-tertiary);
-        }
-        .status-pill.live .status-dot {
-            background: var(--green);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-
-        /* ===== LAYOUT ===== */
-        .main-layout {
-            display: flex;
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 24px 32px;
-            gap: 0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .content-area {
-            flex: 1;
-            min-width: 0;
-            padding-right: 0;
-            transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .content-area.panel-open { padding-right: 24px; }
-
-        /* ===== VIDEO ===== */
-        .video-container {
-            background: #000;
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: var(--shadow-lg);
-            position: relative;
-            aspect-ratio: 16/9;
-        }
-        .video-container iframe, .video-container video {
-            width: 100%; height: 100%;
-            border: none; display: block;
-            position: absolute; top: 0; left: 0;
-        }
-        .video-container canvas {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none; z-index: 10;
-        }
-        .video-placeholder {
-            display: flex; align-items: center; justify-content: center;
-            width: 100%; height: 100%;
-            color: #666; font-size: 15px;
-            flex-direction: column; gap: 16px;
-            position: absolute; top: 0; left: 0; z-index: 5;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-        }
-        .video-placeholder.hidden { display: none; }
-        .video-placeholder .ph-icon {
-            width: 72px; height: 72px; border-radius: 50%;
-            background: rgba(255,255,255,0.08);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 32px;
-        }
-        .video-placeholder .ph-text {
-            color: rgba(255,255,255,0.5);
-            font-size: 14px; font-weight: 500;
-        }
-
-        /* ===== CONTROLS BAR ===== */
-        .controls-bar {
-            display: flex; align-items: center; gap: 12px;
-            padding: 16px 0; flex-wrap: wrap;
-        }
-        .source-toggle {
-            display: flex; border-radius: var(--radius-sm);
-            overflow: hidden; border: 0.5px solid var(--border);
-            background: var(--surface);
-            box-shadow: var(--shadow-sm);
-        }
-        .source-toggle button {
-            padding: 7px 18px; font-size: 13px; font-weight: 600;
-            border: none; cursor: pointer;
-            background: transparent; color: var(--text-secondary);
-            font-family: inherit; transition: all 0.2s;
-        }
-        .source-toggle button.active {
-            background: var(--accent); color: white;
-        }
-        .url-input {
-            flex: 1; min-width: 260px;
-            padding: 8px 16px; border-radius: var(--radius-sm);
-            border: 0.5px solid var(--border);
-            background: var(--surface);
-            font-size: 13px; color: var(--text);
-            font-family: 'Source Code Pro', monospace;
-            box-shadow: var(--shadow-sm);
-            transition: border-color 0.2s;
-        }
-        .url-input:focus { outline: none; border-color: var(--accent); }
-        .video-select {
-            padding: 8px 16px; border-radius: var(--radius-sm);
-            border: 0.5px solid var(--border);
-            background: var(--surface); color: var(--text);
-            font-size: 13px; font-family: inherit;
-            box-shadow: var(--shadow-sm); cursor: pointer;
-        }
-        .btn {
-            padding: 8px 20px; border-radius: var(--radius-sm);
-            border: none; font-size: 13px; font-weight: 600;
-            cursor: pointer; font-family: inherit;
-            transition: all 0.2s;
-        }
-        .btn-connect {
-            background: var(--accent); color: white;
-            box-shadow: 0 1px 3px rgba(0,113,227,0.3);
-        }
-        .btn-connect:hover { background: var(--accent-hover); transform: translateY(-0.5px); }
-        .btn-stop {
-            background: var(--surface); color: var(--red);
-            border: 0.5px solid var(--border);
-            box-shadow: var(--shadow-sm);
-        }
-        .btn-stop:hover { background: #fff5f5; }
-        .btn-icon {
-            width: 36px; height: 36px; border-radius: var(--radius-sm);
-            border: 0.5px solid var(--border); background: var(--surface);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: var(--shadow-sm);
-            font-size: 16px; transition: all 0.2s;
-        }
-        .btn-icon:hover { background: var(--surface-hover); }
-        .btn-icon.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
-
-        /* ===== VIDEO INFO BAR ===== */
-        .video-info {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 0 8px;
-        }
-        .video-title {
-            font-size: 18px; font-weight: 700; letter-spacing: -0.3px;
-        }
-        .video-meta {
-            display: flex; align-items: center; gap: 16px;
-        }
-        .meta-chip {
-            display: flex; align-items: center; gap: 5px;
-            padding: 4px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-            background: var(--bg); border: 0.5px solid var(--border);
-        }
-        .meta-chip .dot { width: 6px; height: 6px; border-radius: 50%; }
-        .meta-chip.fps .dot { background: var(--green); }
-        .meta-chip.otters .dot { background: var(--amber); }
-
-        /* ===== Q&A SECTION ===== */
-        .qa-section {
-            margin-top: 20px;
-            background: var(--surface);
-            border-radius: var(--radius);
-            border: 0.5px solid var(--border);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-        }
-        .qa-header {
-            padding: 14px 20px;
-            font-size: 14px; font-weight: 600;
-            border-bottom: 0.5px solid var(--border);
-            display: flex; align-items: center; gap: 8px;
-        }
-        .qa-header svg { width: 18px; height: 18px; color: var(--accent); }
-        .qa-body { padding: 16px 20px; }
-        .qa-input-row { display: flex; gap: 10px; }
-        .qa-input {
-            flex: 1; padding: 10px 16px;
-            border-radius: var(--radius-sm);
-            border: 0.5px solid var(--border);
-            background: var(--bg);
-            font-size: 14px; color: var(--text);
-            font-family: inherit; resize: none;
-            min-height: 44px; max-height: 120px;
-            transition: border-color 0.2s;
-        }
-        .qa-input:focus { outline: none; border-color: var(--accent); background: white; }
-        .qa-input::placeholder { color: var(--text-tertiary); }
-        .qa-send {
-            padding: 0 20px; border-radius: var(--radius-sm);
-            background: var(--accent); color: white;
-            border: none; font-size: 13px; font-weight: 600;
-            cursor: pointer; font-family: inherit;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-        .qa-send:hover { background: var(--accent-hover); }
-        .qa-answer {
-            margin-top: 14px; padding: 14px 16px;
-            background: var(--bg); border-radius: var(--radius-sm);
-            font-size: 14px; line-height: 1.6;
-            color: var(--text-secondary);
-            white-space: pre-wrap;
-            display: none;
-        }
-        .qa-answer.visible { display: block; }
-        .qa-answer.loading { color: var(--text-tertiary); font-style: italic; }
-
-        /* ===== SIDE PANEL ===== */
-        .side-panel {
-            width: 0; overflow: hidden;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
-        }
-        .side-panel.open { width: 340px; }
-        .side-panel-inner {
-            width: 340px;
-            display: flex; flex-direction: column; gap: 16px;
-        }
-        .card {
-            background: var(--surface);
-            border: 0.5px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-        }
-        .card-header {
-            padding: 14px 18px;
-            font-size: 11px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.8px;
-            color: var(--text-tertiary);
-            border-bottom: 0.5px solid var(--border-light);
-        }
-        .card-body { padding: 14px 18px; }
-        .stat-row {
-            display: flex; justify-content: space-between;
-            align-items: center; padding: 6px 0;
-        }
-        .stat-label { font-size: 13px; color: var(--text-secondary); }
-        .stat-value {
-            font-size: 14px; font-weight: 700;
-            font-family: 'Source Code Pro', monospace;
-        }
-        .stat-value.green { color: var(--green); }
-        .stat-value.amber { color: var(--amber); }
-        .stat-value.blue { color: var(--accent); }
-
-        /* Activity bars */
-        .bar-item { margin-bottom: 10px; }
-        .bar-item:last-child { margin-bottom: 0; }
-        .bar-top {
-            display: flex; justify-content: space-between;
-            font-size: 12px; margin-bottom: 4px;
-        }
-        .bar-top .name { color: var(--text-secondary); font-weight: 500; }
-        .bar-top .pct { color: var(--text); font-weight: 600; font-family: 'Source Code Pro', monospace; }
-        .bar-track {
-            height: 5px; background: var(--bg);
-            border-radius: 3px; overflow: hidden;
-        }
-        .bar-fill {
-            height: 100%; border-radius: 3px;
-            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Timeline */
-        .timeline-item {
-            padding: 10px 0;
-            border-bottom: 0.5px solid var(--border-light);
-            font-size: 12px;
-        }
-        .timeline-item:last-child { border: none; }
-        .timeline-time {
-            font-family: 'Source Code Pro', monospace;
-            color: var(--text-tertiary); font-size: 11px;
-        }
-        .timeline-desc { margin-top: 3px; color: var(--text-secondary); line-height: 1.4; }
-
-        /* ===== SETTINGS PANEL ===== */
-        .settings-toggle {
-            position: fixed; top: 12px; right: 12px; z-index: 1001;
-            background: rgba(0,0,0,0.7); color: #fff; border: none;
-            border-radius: 8px; padding: 8px 14px; cursor: pointer;
-            font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
-            backdrop-filter: blur(8px); transition: all 0.2s;
-        }
-        .settings-toggle:hover { background: rgba(0,0,0,0.85); }
-        .settings-panel {
-            display: none; position: fixed; top: 50px; right: 12px; z-index: 1000;
-            background: rgba(15,15,15,0.92); color: #fff; padding: 18px 20px;
-            border-radius: 14px; font-family: 'Outfit', sans-serif; font-size: 13px;
-            min-width: 270px; backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-        }
-        .settings-panel.open { display: block; }
-        .settings-title {
-            font-weight: 700; font-size: 15px; margin-bottom: 14px; letter-spacing: -0.3px;
-        }
-        .setting-group { margin-bottom: 14px; }
-        .setting-label {
-            display: flex; justify-content: space-between; margin-bottom: 4px;
-        }
-        .setting-label span:first-child { color: #aaa; }
-        .setting-val { font-weight: 600; color: #0071e3; }
-        .setting-range {
-            width: 100%; accent-color: #0071e3;
-            height: 4px; cursor: pointer;
-        }
-        .setting-hint {
-            display: flex; justify-content: space-between;
-            font-size: 10px; color: #555; margin-top: 2px;
-        }
-        .setting-toggles {
-            display: flex; flex-direction: column; gap: 8px;
-            padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);
-        }
-        .setting-toggles label {
-            display: flex; align-items: center; gap: 8px; cursor: pointer;
-        }
-        .setting-toggles input { accent-color: #34c759; }
-        .settings-stats {
-            padding-top: 10px; margin-top: 10px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            font-size: 11px; color: #888;
-        }
-        .settings-stats div { margin-bottom: 2px; }
-        .settings-stats .val { font-weight: 600; }
-        .settings-stats .val.g { color: #34c759; }
-        .settings-stats .val.b { color: #0071e3; }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 900px) {
-            .main-layout { padding: 16px; }
-            .side-panel.open { width: 100%; }
-            .header { padding: 12px 16px; }
-        }
+        :root{--bg:#f5f5f7;--surface:#fff;--surface-hover:#fafafa;--border:#e5e5e7;--border-light:#f0f0f2;--text:#1d1d1f;--text-sec:#6e6e73;--text-ter:#aeaeb2;--accent:#0071e3;--accent-hover:#0077ED;--accent-light:rgba(0,113,227,0.08);--green:#34c759;--green-light:rgba(52,199,89,0.1);--red:#ff3b30;--amber:#ff9f0a;--radius:12px;--radius-lg:16px;--radius-sm:8px;--shadow-sm:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.06);--shadow-md:0 4px 12px rgba(0,0,0,0.06),0 1px 4px rgba(0,0,0,0.04);--shadow-lg:0 12px 40px rgba(0,0,0,0.08),0 4px 12px rgba(0,0,0,0.04)}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+        .header{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:rgba(255,255,255,0.72);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);position:sticky;top:0;z-index:100}
+        .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;letter-spacing:-0.3px}
+        .logo-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0071e3,#34c759);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
+        .status-pill{display:flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg);border:0.5px solid var(--border);color:var(--text-sec)}
+        .status-pill.live{background:var(--green-light);border-color:rgba(52,199,89,0.3);color:#248a3d}
+        .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-ter)}
+        .status-pill.live .status-dot{background:var(--green);animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+        .main-layout{display:flex;max-width:1600px;margin:0 auto;padding:24px 32px;gap:0}
+        .content-area{flex:1;min-width:0;padding-right:0;transition:padding-right 0.3s}
+        .content-area.panel-open{padding-right:24px}
+        .video-container{background:#000;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-lg);position:relative;aspect-ratio:16/9}
+        .video-container iframe{width:100%;height:100%;border:none;display:block;position:absolute;top:0;left:0}
+        .video-container canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+        .video-container img#localDisplay{width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;display:none}
+        .video-placeholder{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#666;font-size:15px;flex-direction:column;gap:16px;position:absolute;top:0;left:0;z-index:5;background:linear-gradient(135deg,#1a1a2e,#16213e)}
+        .video-placeholder.hidden{display:none}
+        .video-placeholder .ph-icon{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:32px}
+        .video-placeholder .ph-text{color:rgba(255,255,255,0.5);font-size:14px;font-weight:500}
+        .controls-bar{display:flex;align-items:center;gap:12px;padding:16px 0;flex-wrap:wrap}
+        .source-toggle{display:flex;border-radius:var(--radius-sm);overflow:hidden;border:0.5px solid var(--border);background:var(--surface);box-shadow:var(--shadow-sm)}
+        .source-toggle button{padding:7px 18px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--text-sec);font-family:inherit;transition:all 0.2s}
+        .source-toggle button.active{background:var(--accent);color:#fff}
+        .url-input{flex:1;min-width:260px;padding:8px 16px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--surface);font-size:13px;color:var(--text);font-family:'Source Code Pro',monospace;box-shadow:var(--shadow-sm)}
+        .url-input:focus{outline:none;border-color:var(--accent)}
+        .video-select{padding:8px 16px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;box-shadow:var(--shadow-sm);cursor:pointer}
+        .btn{padding:8px 20px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s}
+        .btn-connect{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,113,227,0.3)}
+        .btn-connect:hover{background:var(--accent-hover)}
+        .btn-stop{background:var(--surface);color:var(--red);border:0.5px solid var(--border);box-shadow:var(--shadow-sm)}
+        .btn-stop:hover{background:#fff5f5}
+        .btn-icon{width:36px;height:36px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-sm);font-size:16px;transition:all 0.2s}
+        .btn-icon:hover{background:var(--surface-hover)}
+        .btn-icon.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+        .video-info{display:flex;align-items:center;justify-content:space-between;padding:14px 0 8px}
+        .video-title{font-size:18px;font-weight:700;letter-spacing:-0.3px}
+        .video-meta{display:flex;align-items:center;gap:16px}
+        .meta-chip{display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg);border:0.5px solid var(--border)}
+        .meta-chip .dot{width:6px;height:6px;border-radius:50%}
+        .meta-chip.fps .dot{background:var(--green)}
+        .meta-chip.otters .dot{background:var(--amber)}
+        .qa-section{margin-top:20px;background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden}
+        .qa-header{padding:14px 20px;font-size:14px;font-weight:600;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:8px}
+        .qa-header svg{width:18px;height:18px;color:var(--accent)}
+        .qa-body{padding:16px 20px}
+        .qa-input-row{display:flex;gap:10px}
+        .qa-input{flex:1;padding:10px 16px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--bg);font-size:14px;color:var(--text);font-family:inherit;resize:none;min-height:44px;max-height:120px}
+        .qa-input:focus{outline:none;border-color:var(--accent);background:#fff}
+        .qa-input::placeholder{color:var(--text-ter)}
+        .qa-send{padding:0 20px;border-radius:var(--radius-sm);background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+        .qa-send:hover{background:var(--accent-hover)}
+        .qa-answer{margin-top:14px;padding:14px 16px;background:var(--bg);border-radius:var(--radius-sm);font-size:14px;line-height:1.6;color:var(--text-sec);white-space:pre-wrap;display:none}
+        .qa-answer.visible{display:block}
+        .qa-answer.loading{color:var(--text-ter);font-style:italic}
+        .side-panel{width:0;overflow:hidden;transition:width 0.3s;flex-shrink:0}
+        .side-panel.open{width:340px}
+        .side-panel-inner{width:340px;display:flex;flex-direction:column;gap:16px}
+        .card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
+        .card-header{padding:14px 18px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-ter);border-bottom:0.5px solid var(--border-light)}
+        .card-body{padding:14px 18px}
+        .stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+        .stat-label{font-size:13px;color:var(--text-sec)}
+        .stat-value{font-size:14px;font-weight:700;font-family:'Source Code Pro',monospace}
+        .stat-value.green{color:var(--green)}.stat-value.amber{color:var(--amber)}.stat-value.blue{color:var(--accent)}
+        .bar-item{margin-bottom:10px}.bar-item:last-child{margin-bottom:0}
+        .bar-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+        .bar-top .name{color:var(--text-sec);font-weight:500}
+        .bar-top .pct{color:var(--text);font-weight:600;font-family:'Source Code Pro',monospace}
+        .bar-track{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+        .bar-fill{height:100%;border-radius:3px;transition:width 0.6s}
+        .timeline-item{padding:10px 0;border-bottom:0.5px solid var(--border-light);font-size:12px}
+        .timeline-item:last-child{border:none}
+        .timeline-time{font-family:'Source Code Pro',monospace;color:var(--text-ter);font-size:11px}
+        .timeline-desc{margin-top:3px;color:var(--text-sec);line-height:1.4}
+        .settings-toggle{position:fixed;top:12px;right:12px;z-index:1001;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;backdrop-filter:blur(8px)}
+        .settings-toggle:hover{background:rgba(0,0,0,0.85)}
+        .settings-panel{display:none;position:fixed;top:50px;right:12px;z-index:1000;background:rgba(15,15,15,0.92);color:#fff;padding:18px 20px;border-radius:14px;font-family:'Outfit',sans-serif;font-size:13px;min-width:270px;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+        .settings-panel.open{display:block}
+        .settings-title{font-weight:700;font-size:15px;margin-bottom:14px}
+        .setting-group{margin-bottom:14px}
+        .setting-label{display:flex;justify-content:space-between;margin-bottom:4px}
+        .setting-label span:first-child{color:#aaa}
+        .setting-val{font-weight:600;color:#0071e3}
+        .setting-range{width:100%;accent-color:#0071e3}
+        .setting-hint{display:flex;justify-content:space-between;font-size:10px;color:#555;margin-top:2px}
+        .setting-toggles{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)}
+        .setting-toggles label{display:flex;align-items:center;gap:8px;cursor:pointer}
+        .setting-toggles input{accent-color:#34c759}
+        .settings-stats{padding-top:10px;margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:11px;color:#888}
+        .settings-stats .val{font-weight:600}.settings-stats .val.g{color:#34c759}.settings-stats .val.b{color:#0071e3}
+        @media(max-width:900px){.main-layout{padding:16px}.side-panel.open{width:100%}.header{padding:12px 16px}}
     </style>
 </head>
 <body>
-    <!-- HEADER -->
     <div class="header">
-        <div class="logo">
-            <div class="logo-icon">🦦</div>
-            OtterVision
-        </div>
-        <div class="header-right">
-            <div class="status-pill" id="statusPill">
-                <div class="status-dot"></div>
-                <span id="statusText">Offline</span>
-            </div>
+        <div class="logo"><div class="logo-icon">🦦</div>OtterVision</div>
+        <div style="display:flex;align-items:center;gap:16px">
+            <div class="status-pill" id="statusPill"><div class="status-dot"></div><span id="statusText">Offline</span></div>
         </div>
     </div>
 
-    <!-- MAIN -->
     <div class="main-layout">
         <div class="content-area" id="contentArea">
-            <!-- VIDEO -->
             <div class="video-container" id="videoWrap">
                 <div class="video-placeholder" id="placeholder">
                     <div class="ph-icon">🦦</div>
                     <div class="ph-text">Connect to a live feed or select a local video</div>
                 </div>
+                <!-- Local mode: server-rendered JPEG with detections drawn -->
+                <img id="localDisplay" src="" alt="">
+                <!-- YouTube mode: iframe + canvas overlay -->
                 <canvas id="overlayCanvas"></canvas>
             </div>
 
-            <!-- VIDEO INFO -->
             <div class="video-info">
                 <div class="video-title">Otter Exhibit — Live Analysis</div>
                 <div class="video-meta">
@@ -440,14 +131,13 @@
                 </div>
             </div>
 
-            <!-- CONTROLS -->
             <div class="controls-bar">
                 <div class="source-toggle">
                     <button class="active" onclick="setSource('youtube')">YouTube</button>
                     <button onclick="setSource('local')">Local</button>
                 </div>
                 <div id="youtubeControls" style="display:contents">
-                    <input class="url-input" type="text" id="streamUrl" value="https://www.youtube.com/watch?v=_KXHUb0wFRE" placeholder="YouTube URL...">
+                    <input class="url-input" type="text" id="streamUrl" value="https://www.youtube.com/watch?v=_KXHUb0wFRE">
                 </div>
                 <div id="localControls" style="display:none">
                     <select class="video-select" id="videoSelect"><option value="">Loading...</option></select>
@@ -455,12 +145,11 @@
                 <button class="btn btn-connect" onclick="startStream()">Connect</button>
                 <button class="btn btn-stop" onclick="stopStream()">Stop</button>
                 <div style="flex:1"></div>
-                <button class="btn-icon" id="panelToggle" onclick="togglePanel()" title="Toggle Stats Panel">
+                <button class="btn-icon" id="panelToggle" onclick="togglePanel()" title="Stats Panel">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
                 </button>
             </div>
 
-            <!-- Q&A -->
             <div class="qa-section">
                 <div class="qa-header">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg>
@@ -468,7 +157,7 @@
                 </div>
                 <div class="qa-body">
                     <div class="qa-input-row">
-                        <textarea class="qa-input" id="qaInput" rows="1" placeholder="What are the otters doing? Are they playing together?"></textarea>
+                        <textarea class="qa-input" id="qaInput" rows="1" placeholder="What are the otters doing?"></textarea>
                         <button class="qa-send" onclick="askQuestion()">Ask</button>
                     </div>
                     <div class="qa-answer" id="qaAnswer"></div>
@@ -476,295 +165,204 @@
             </div>
         </div>
 
-        <!-- SIDE PANEL -->
         <div class="side-panel" id="sidePanel">
             <div class="side-panel-inner">
-                <div class="card">
-                    <div class="card-header">Live Statistics</div>
-                    <div class="card-body">
-                        <div class="stat-row"><span class="stat-label">Inference FPS</span><span class="stat-value green" id="statFps">0</span></div>
-                        <div class="stat-row"><span class="stat-label">Otters Detected</span><span class="stat-value amber" id="statOtters">0</span></div>
-                        <div class="stat-row"><span class="stat-label">Total Inferences</span><span class="stat-value blue" id="statTotal">0</span></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header">Activity Distribution</div>
-                    <div class="card-body" id="activityBars">
-                        <div style="color:var(--text-tertiary);font-size:13px">No data yet</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header">Recent Activity</div>
-                    <div class="card-body" id="timeline" style="max-height:260px;overflow-y:auto">
-                        <div style="color:var(--text-tertiary);font-size:13px">Waiting for data...</div>
-                    </div>
-                </div>
+                <div class="card"><div class="card-header">Live Statistics</div><div class="card-body">
+                    <div class="stat-row"><span class="stat-label">Inference FPS</span><span class="stat-value green" id="statFps">0</span></div>
+                    <div class="stat-row"><span class="stat-label">Otters Detected</span><span class="stat-value amber" id="statOtters">0</span></div>
+                    <div class="stat-row"><span class="stat-label">Total Inferences</span><span class="stat-value blue" id="statTotal">0</span></div>
+                </div></div>
+                <div class="card"><div class="card-header">Activity Distribution</div><div class="card-body" id="activityBars"><div style="color:var(--text-ter);font-size:13px">No data yet</div></div></div>
+                <div class="card"><div class="card-header">Recent Activity</div><div class="card-body" id="timeline" style="max-height:260px;overflow-y:auto"><div style="color:var(--text-ter);font-size:13px">Waiting...</div></div></div>
             </div>
         </div>
     </div>
 
-    <!-- SETTINGS PANEL -->
+    <!-- Settings -->
     <button class="settings-toggle" onclick="toggleSettings()">⚙ Settings</button>
     <div class="settings-panel" id="settingsPanel">
         <div class="settings-title">Live Settings</div>
-
-        <div class="setting-group">
-            <div class="setting-label">
-                <span>Confidence Threshold</span>
-                <span class="setting-val" id="confVal">0.40</span>
-            </div>
-            <input type="range" class="setting-range" id="confSlider" min="1" max="99" value="40"
-                   oninput="updateSetting('conf', this.value/100)">
-            <div class="setting-hint"><span>More detections</span><span>Fewer false positives</span></div>
-        </div>
-
-        <div class="setting-group">
-            <div class="setting-label">
-                <span>Inference Resolution</span>
-                <span class="setting-val" id="imgsVal">960</span>
-            </div>
-            <input type="range" class="setting-range" id="imgsSlider" min="320" max="1280" step="32" value="960"
-                   oninput="updateSetting('imgsz', parseInt(this.value))">
-            <div class="setting-hint"><span>Faster</span><span>More accurate</span></div>
-        </div>
-
-        <div class="setting-group">
-            <div class="setting-label">
-                <span>Max Detections</span>
-                <span class="setting-val" id="maxDetVal">10</span>
-            </div>
-            <input type="range" class="setting-range" id="maxDetSlider" min="1" max="30" value="10"
-                   oninput="updateSetting('max_det', parseInt(this.value))">
-        </div>
-
+        <div class="setting-group"><div class="setting-label"><span>Confidence</span><span class="setting-val" id="confVal">0.30</span></div>
+            <input type="range" class="setting-range" id="confSlider" min="1" max="99" value="30" oninput="updateSetting('conf',this.value/100)">
+            <div class="setting-hint"><span>More detections</span><span>Fewer false positives</span></div></div>
+        <div class="setting-group"><div class="setting-label"><span>Resolution</span><span class="setting-val" id="imgsVal">640</span></div>
+            <input type="range" class="setting-range" id="imgsSlider" min="320" max="1280" step="32" value="640" oninput="updateSetting('imgsz',parseInt(this.value))">
+            <div class="setting-hint"><span>Faster</span><span>More accurate</span></div></div>
+        <div class="setting-group"><div class="setting-label"><span>Max Detections</span><span class="setting-val" id="maxDetVal">10</span></div>
+            <input type="range" class="setting-range" id="maxDetSlider" min="1" max="30" value="10" oninput="updateSetting('max_det',parseInt(this.value))"></div>
         <div class="setting-toggles">
-            <label><input type="checkbox" id="showMasks" checked onchange="updateSetting('show_masks', this.checked)"> Show Segmentation Masks</label>
-            <label><input type="checkbox" id="showLabels" checked onchange="updateSetting('show_labels', this.checked)"> Show Labels</label>
-            <label><input type="checkbox" id="vlmEnabled" checked onchange="updateSetting('vlm_enabled', this.checked)"> VLM Activity Labels</label>
-            <label><input type="checkbox" id="halfPrecision" checked onchange="updateSetting('half', this.checked)"> Half Precision (FP16)</label>
+            <label><input type="checkbox" id="showMasks" checked onchange="updateSetting('show_masks',this.checked)"> Segmentation Masks</label>
+            <label><input type="checkbox" id="showLabels" checked onchange="updateSetting('show_labels',this.checked)"> Labels</label>
+            <label><input type="checkbox" id="vlmEnabled" checked onchange="updateSetting('vlm_enabled',this.checked)"> VLM Activity</label>
+            <label><input type="checkbox" id="halfPrecision" checked onchange="updateSetting('half',this.checked)"> FP16</label>
         </div>
-
         <div class="settings-stats">
-            <div>Inference FPS: <span class="val g" id="sStatFps">--</span></div>
+            <div>FPS: <span class="val g" id="sStatFps">--</span></div>
             <div>Otters: <span class="val b" id="sStatOtters">--</span></div>
-            <div>Total: <span class="val" id="sStatTotal">--</span></div>
         </div>
     </div>
 
-    <script>
-        let overlayWs=null, statsInterval=null, inferenceWidth=1280, inferenceHeight=720, currentSource='youtube', panelOpen=false, settingsOpen=false;
-        const actColors={floating:'#34c759',diving:'#5856d6',eating:'#ff9f0a',grooming:'#ff3b30',playing:'#af52de',socializing:'#30b0c7',resting:'#8e8e93',exploring:'#ff6723',active:'#0071e3'};
+<script>
+let ws=null, statsInterval=null, inferenceW=1280, inferenceH=720, currentSource='youtube', currentMode=null, panelOpen=false;
+const actColors={floating:'#34c759',diving:'#5856d6',eating:'#ff9f0a',grooming:'#ff3b30',playing:'#af52de',socializing:'#30b0c7',resting:'#8e8e93',exploring:'#ff6723',active:'#0071e3'};
 
-        /* ===== SETTINGS ===== */
-        function toggleSettings(){
-            settingsOpen=!settingsOpen;
-            document.getElementById('settingsPanel').classList.toggle('open',settingsOpen);
-        }
+function setSource(s){
+    currentSource=s;
+    document.querySelectorAll('.source-toggle button').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('youtubeControls').style.display=s==='youtube'?'contents':'none';
+    document.getElementById('localControls').style.display=s==='local'?'contents':'none';
+    if(s==='local')loadVideoList();
+}
+async function loadVideoList(){try{const r=await fetch('/api/videos');const d=await r.json();const s=document.getElementById('videoSelect');s.innerHTML=d.videos.length?d.videos.map(v=>`<option value="${v}">${v}</option>`).join(''):'<option>No videos</option>'}catch(e){}}
+function extractYTId(u){const m=u.match(/[?&]v=([^&]+)/)||u.match(/youtu\.be\/([^?]+)/);return m?m[1]:null}
+function togglePanel(){panelOpen=!panelOpen;document.getElementById('sidePanel').classList.toggle('open',panelOpen);document.getElementById('contentArea').classList.toggle('panel-open',panelOpen);document.getElementById('panelToggle').classList.toggle('active',panelOpen)}
+function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open')}
 
-        async function loadSettings(){
-            try{
-                const r=await fetch('/api/settings');
-                const s=await r.json();
-                document.getElementById('confSlider').value=Math.round(s.conf*100);
-                document.getElementById('confVal').textContent=s.conf.toFixed(2);
-                document.getElementById('imgsSlider').value=s.imgsz;
-                document.getElementById('imgsVal').textContent=s.imgsz;
-                document.getElementById('maxDetSlider').value=s.max_det;
-                document.getElementById('maxDetVal').textContent=s.max_det;
-                document.getElementById('showMasks').checked=s.show_masks;
-                document.getElementById('showLabels').checked=s.show_labels;
-                document.getElementById('vlmEnabled').checked=s.vlm_enabled;
-                document.getElementById('halfPrecision').checked=s.half;
-            }catch(e){}
-        }
+async function startStream(){
+    let body={};
+    if(currentSource==='youtube'){body={source:'youtube',url:document.getElementById('streamUrl').value}}
+    else{const fn=document.getElementById('videoSelect').value;if(!fn){alert('Select a video');return}body={source:'local',filename:fn}}
+    try{
+        const r=await fetch('/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const d=await r.json();
+        if(d.error){alert(d.error);return}
+        inferenceW=d.width||1280; inferenceH=d.height||720;
+        currentMode=d.mode;
+        document.getElementById('placeholder').classList.add('hidden');
 
-        async function updateSetting(key, value){
-            if(key==='conf')document.getElementById('confVal').textContent=value.toFixed(2);
-            else if(key==='imgsz')document.getElementById('imgsVal').textContent=value;
-            else if(key==='max_det')document.getElementById('maxDetVal').textContent=value;
-            try{
-                await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:value})});
-            }catch(e){}
-        }
+        // Clean up previous elements
+        const oldIframe=document.getElementById('ytPlayer'); if(oldIframe)oldIframe.remove();
+        document.getElementById('localDisplay').style.display='none';
+        document.getElementById('overlayCanvas').style.display='none';
 
-        /* ===== SOURCE ===== */
-        function setSource(s){
-            currentSource=s;
-            document.querySelectorAll('.source-toggle button').forEach(e=>e.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('youtubeControls').style.display=s==='youtube'?'contents':'none';
-            document.getElementById('localControls').style.display=s==='local'?'contents':'none';
-            if(s==='local')loadVideoList();
-        }
-        async function loadVideoList(){try{const r=await fetch('/api/videos');const d=await r.json();const s=document.getElementById('videoSelect');s.innerHTML=d.videos.length?d.videos.map(v=>`<option value="${v}">${v}</option>`).join(''):'<option value="">No videos</option>'}catch(e){}}
-        function extractYouTubeId(u){const m=u.match(/[?&]v=([^&]+)/)||u.match(/youtu\.be\/([^?]+)/);return m?m[1]:null}
-
-        function togglePanel(){
-            panelOpen=!panelOpen;
-            document.getElementById('sidePanel').classList.toggle('open',panelOpen);
-            document.getElementById('contentArea').classList.toggle('panel-open',panelOpen);
-            document.getElementById('panelToggle').classList.toggle('active',panelOpen);
-        }
-
-        /* ===== STREAM ===== */
-        async function startStream(){
-            const wrap=document.getElementById('videoWrap');
-            let body={};
-            if(currentSource==='youtube'){body={source:'youtube',url:document.getElementById('streamUrl').value}}
-            else{const fn=document.getElementById('videoSelect').value;if(!fn){alert('Select a video.');return}body={source:'local',filename:fn}}
-            try{
-                const r=await fetch('/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-                const d=await r.json();
-                if(d.error){alert(d.error);return}
-                if(d.width)inferenceWidth=d.width;
-                if(d.height)inferenceHeight=d.height;
-                document.getElementById('placeholder').classList.add('hidden');
-                const o1=document.getElementById('ytPlayer');if(o1)o1.remove();
-                const o2=document.getElementById('localPlayer');if(o2)o2.remove();
-                if(currentSource==='youtube'){
-                    const vid=extractYouTubeId(body.url);
-                    if(vid){const f=document.createElement('iframe');f.id='ytPlayer';f.src=`https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&playsinline=1&controls=1`;f.allow='autoplay; encrypted-media';f.allowFullscreen=true;wrap.insertBefore(f,document.getElementById('overlayCanvas'))}
-                }else{
-                    const v=document.createElement('video');v.id='localPlayer';v.src=`/api/video/${body.filename}`;v.autoplay=true;v.muted=true;v.loop=true;v.playsInline=true;v.controls=true;wrap.insertBefore(v,document.getElementById('overlayCanvas'))
-                }
-                connectOverlayWs();startStatsPolling();
-                document.getElementById('statusPill').classList.add('live');
-                document.getElementById('statusText').textContent='Live';
-            }catch(e){alert('Failed: '+e.message)}
-        }
-
-        /* ===== WEBSOCKET ===== */
-        function connectOverlayWs(){
-            if(overlayWs)overlayWs.close();
-            const p=location.protocol==='https:'?'wss:':'ws:';
-            overlayWs=new WebSocket(`${p}//${location.host}/ws/overlay`);
-            overlayWs.onmessage=ev=>{
-                const m=JSON.parse(ev.data);
-                if(m.type==='detections'){
-                    const showMasks=m.settings?m.settings.show_masks:true;
-                    const showLabels=m.settings?m.settings.show_labels:true;
-                    drawOverlay(m.detections,showMasks,showLabels);
-                    document.getElementById('chipOtters').textContent=m.detections.length+' otter'+(m.detections.length!==1?'s':'');
-                    document.getElementById('statOtters').textContent=m.detections.length;
-                    document.getElementById('sStatOtters').textContent=m.detections.length;
-                    if(m.inference_fps!=null){
-                        document.getElementById('chipFps').textContent=m.inference_fps.toFixed(0)+' fps';
-                        document.getElementById('statFps').textContent=m.inference_fps.toFixed(0);
-                        document.getElementById('sStatFps').textContent=m.inference_fps.toFixed(0);
-                    }
-                }
-            };
-            overlayWs.onclose=()=>{setTimeout(()=>{if(document.getElementById('statusPill').classList.contains('live'))connectOverlayWs()},3000)};
-        }
-
-        /* ===== OVERLAY DRAWING ===== */
-        function drawOverlay(dets,showMasks,showLabels){
-            const c=document.getElementById('overlayCanvas'),w=document.getElementById('videoWrap'),ctx=c.getContext('2d'),r=w.getBoundingClientRect();
-            c.width=r.width;c.height=r.height;
-            const sx=r.width/inferenceWidth,sy=r.height/inferenceHeight;
-            ctx.clearRect(0,0,c.width,c.height);
-            for(const d of dets){
-                const col=actColors[d.activity]||'#0071e3';
-                const x1=d.bbox[0]*sx,y1=d.bbox[1]*sy,x2=d.bbox[2]*sx,y2=d.bbox[3]*sy;
-                // Polygon mask
-                if(showMasks&&d.polygon&&d.polygon.length>2){
-                    ctx.beginPath();
-                    ctx.moveTo(d.polygon[0][0]*sx,d.polygon[0][1]*sy);
-                    for(let i=1;i<d.polygon.length;i++)ctx.lineTo(d.polygon[i][0]*sx,d.polygon[i][1]*sy);
-                    ctx.closePath();
-                    ctx.fillStyle=col+'25';ctx.fill();
-                    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
-                }else if(showMasks){
-                    ctx.strokeStyle=col;ctx.lineWidth=2;
-                    ctx.strokeRect(x1,y1,x2-x1,y2-y1);
-                }
-                // Label
-                if(showLabels){
-                    let lb=`Otter #${d.otter_id+1}`;
-                    if(d.activity&&d.activity!=='active')lb+=`  ${d.activity}`;
-                    if(d.object&&d.object!=='none')lb+=`  [${d.object}]`;
-                    ctx.font='600 12px "Outfit",sans-serif';
-                    const tw=ctx.measureText(lb).width;
-                    const lw=tw+14,lh=22;
-                    let lx=Math.max(4,Math.min(x1,c.width-lw-4));
-                    let ly=y1-lh-3;
-                    if(ly<4)ly=y2+4;
-                    if(ly+lh>c.height-4)ly=y1+4;
-                    ctx.fillStyle=col+'e0';
-                    ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,5);ctx.fill();
-                    ctx.fillStyle='#fff';ctx.fillText(lb,lx+7,ly+15);
-                }
+        if(currentMode==='youtube'){
+            const vid=extractYTId(body.url);
+            if(vid){
+                const wrap=document.getElementById('videoWrap');
+                const f=document.createElement('iframe');f.id='ytPlayer';
+                f.src=`https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&playsinline=1&controls=1`;
+                f.allow='autoplay; encrypted-media';f.allowFullscreen=true;
+                wrap.insertBefore(f,document.getElementById('overlayCanvas'));
+                document.getElementById('overlayCanvas').style.display='block';
             }
+        } else if(currentMode==='local'){
+            document.getElementById('localDisplay').style.display='block';
         }
 
-        /* ===== STOP ===== */
-        async function stopStream(){
-            if(overlayWs){overlayWs.close();overlayWs=null}
-            if(statsInterval)clearInterval(statsInterval);
-            const o1=document.getElementById('ytPlayer');if(o1)o1.remove();
-            const o2=document.getElementById('localPlayer');if(o2)o2.remove();
-            await fetch('/api/stop',{method:'POST'});
-            document.getElementById('statusPill').classList.remove('live');
-            document.getElementById('statusText').textContent='Offline';
-            document.getElementById('placeholder').classList.remove('hidden');
-            document.getElementById('overlayCanvas').getContext('2d').clearRect(0,0,9999,9999);
-            document.getElementById('chipFps').textContent='0 fps';
-            document.getElementById('chipOtters').textContent='0 otters';
+        connectWs(); startStatsPolling();
+        document.getElementById('statusPill').classList.add('live');
+        document.getElementById('statusText').textContent='Live';
+    }catch(e){alert('Failed: '+e.message)}
+}
+
+function connectWs(){
+    if(ws)ws.close();
+    const p=location.protocol==='https:'?'wss:':'ws:';
+    ws=new WebSocket(`${p}//${location.host}/ws/overlay`);
+    ws.onmessage=ev=>{
+        const m=JSON.parse(ev.data);
+
+        if(m.type==='frame'){
+            // LOCAL MODE: server sends annotated JPEG
+            const img=document.getElementById('localDisplay');
+            img.src='data:image/jpeg;base64,'+m.image;
+            document.getElementById('chipOtters').textContent=m.otters+' otter'+(m.otters!==1?'s':'');
+            document.getElementById('statOtters').textContent=m.otters;
+            document.getElementById('sStatOtters').textContent=m.otters;
+        }
+        else if(m.type==='detections'){
+            // YOUTUBE MODE: draw detection overlay on canvas
+            const showM=m.settings?m.settings.show_masks:true;
+            const showL=m.settings?m.settings.show_labels:true;
+            drawOverlay(m.detections,showM,showL);
+            document.getElementById('chipOtters').textContent=m.detections.length+' otter'+(m.detections.length!==1?'s':'');
+            document.getElementById('statOtters').textContent=m.detections.length;
+            document.getElementById('sStatOtters').textContent=m.detections.length;
         }
 
-        /* ===== Q&A ===== */
-        async function askQuestion(){
-            const i=document.getElementById('qaInput'),a=document.getElementById('qaAnswer');
-            if(!i.value.trim())return;
-            a.textContent='Thinking...';a.classList.add('loading','visible');
-            try{
-                const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:i.value})});
-                const d=await r.json();
-                a.textContent=d.answer;a.classList.remove('loading');
-            }catch(e){a.textContent='Error: '+e.message;a.classList.remove('loading')}
+        if(m.inference_fps!=null){
+            document.getElementById('chipFps').textContent=m.inference_fps.toFixed(0)+' fps';
+            document.getElementById('statFps').textContent=m.inference_fps.toFixed(0);
+            document.getElementById('sStatFps').textContent=m.inference_fps.toFixed(0);
         }
-        document.getElementById('qaInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askQuestion()}});
-        document.getElementById('qaInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
+    };
+    ws.onclose=()=>{setTimeout(()=>{if(document.getElementById('statusPill').classList.contains('live'))connectWs()},3000)};
+}
 
-        /* ===== STATS POLLING ===== */
-        function startStatsPolling(){
-            if(statsInterval)clearInterval(statsInterval);
-            statsInterval=setInterval(async()=>{
-                try{
-                    const r=await fetch('/api/stats');const s=await r.json();
-                    document.getElementById('statTotal').textContent=s.total_inferences;
-                    document.getElementById('sStatTotal').textContent=s.total_inferences;
-                    updateBars(s.activity_distribution);
-                    updateTimeline(s.recent_timeline);
-                }catch(e){}
-            },2000);
+function drawOverlay(dets,showM,showL){
+    const c=document.getElementById('overlayCanvas'),wrap=document.getElementById('videoWrap'),ctx=c.getContext('2d'),r=wrap.getBoundingClientRect();
+    c.width=r.width;c.height=r.height;
+    const sx=r.width/inferenceW,sy=r.height/inferenceH;
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const d of dets){
+        const col=actColors[d.activity]||'#0071e3';
+        const x1=d.bbox[0]*sx,y1=d.bbox[1]*sy,x2=d.bbox[2]*sx,y2=d.bbox[3]*sy;
+        if(showM&&d.polygon&&d.polygon.length>2){
+            ctx.beginPath();ctx.moveTo(d.polygon[0][0]*sx,d.polygon[0][1]*sy);
+            for(let i=1;i<d.polygon.length;i++)ctx.lineTo(d.polygon[i][0]*sx,d.polygon[i][1]*sy);
+            ctx.closePath();ctx.fillStyle=col+'25';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+        }else if(showM){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.strokeRect(x1,y1,x2-x1,y2-y1)}
+        if(showL){
+            let lb=`Otter #${d.otter_id+1}`;
+            if(d.activity&&d.activity!=='active')lb+=` ${d.activity}`;
+            if(d.object&&d.object!=='none')lb+=` [${d.object}]`;
+            ctx.font='600 12px "Outfit",sans-serif';
+            const tw=ctx.measureText(lb).width,lw=tw+14,lh=22;
+            let lx=Math.max(4,Math.min(x1,c.width-lw-4)),ly=y1-lh-3;
+            if(ly<4)ly=y2+4;
+            ctx.fillStyle=col+'e0';ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,5);ctx.fill();
+            ctx.fillStyle='#fff';ctx.fillText(lb,lx+7,ly+15);
         }
+    }
+}
 
-        function updateBars(d){
-            const c=document.getElementById('activityBars');
-            const t=Object.values(d).reduce((a,b)=>a+b,0)||1;
-            let h='';
-            for(const[a,n]of Object.entries(d).sort((a,b)=>b[1]-a[1])){
-                const p=((n/t)*100).toFixed(1);
-                h+=`<div class="bar-item"><div class="bar-top"><span class="name">${a}</span><span class="pct">${p}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${actColors[a]||'#8e8e93'}"></div></div></div>`;
-            }
-            c.innerHTML=h||'<div style="color:var(--text-tertiary);font-size:13px">No data yet</div>';
-        }
+async function stopStream(){
+    if(ws){ws.close();ws=null}
+    if(statsInterval)clearInterval(statsInterval);
+    const f=document.getElementById('ytPlayer');if(f)f.remove();
+    document.getElementById('localDisplay').style.display='none';
+    document.getElementById('overlayCanvas').style.display='none';
+    await fetch('/api/stop',{method:'POST'});
+    document.getElementById('statusPill').classList.remove('live');
+    document.getElementById('statusText').textContent='Offline';
+    document.getElementById('placeholder').classList.remove('hidden');
+    document.getElementById('overlayCanvas').getContext('2d').clearRect(0,0,9999,9999);
+    document.getElementById('chipFps').textContent='0 fps';
+    document.getElementById('chipOtters').textContent='0 otters';
+    currentMode=null;
+}
 
-        function updateTimeline(tl){
-            const c=document.getElementById('timeline');
-            let h='';
-            for(const e of(tl||[]).slice(-8).reverse()){
-                const a=e.activities.join(', ');
-                const o=e.objects&&e.objects.length?` — ${e.objects.join(', ')}`:'';
-                h+=`<div class="timeline-item"><div class="timeline-time">${e.time}</div><div class="timeline-desc">${e.otters} otter(s): ${a}${o}</div></div>`;
-            }
-            c.innerHTML=h||'<div style="color:var(--text-tertiary);font-size:13px">Waiting for data...</div>';
-        }
+async function askQuestion(){
+    const i=document.getElementById('qaInput'),a=document.getElementById('qaAnswer');
+    if(!i.value.trim())return;
+    a.textContent='Thinking...';a.classList.add('loading','visible');
+    try{const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:i.value})});const d=await r.json();a.textContent=d.answer;a.classList.remove('loading')}catch(e){a.textContent='Error: '+e.message;a.classList.remove('loading')}
+}
+document.getElementById('qaInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askQuestion()}});
+document.getElementById('qaInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
 
-        /* ===== INIT ===== */
-        loadVideoList();
-        loadSettings();
-    </script>
+async function loadSettings(){
+    try{const r=await fetch('/api/settings');const s=await r.json();
+    document.getElementById('confSlider').value=Math.round(s.conf*100);document.getElementById('confVal').textContent=s.conf.toFixed(2);
+    document.getElementById('imgsSlider').value=s.imgsz;document.getElementById('imgsVal').textContent=s.imgsz;
+    document.getElementById('maxDetSlider').value=s.max_det;document.getElementById('maxDetVal').textContent=s.max_det;
+    document.getElementById('showMasks').checked=s.show_masks;document.getElementById('showLabels').checked=s.show_labels;
+    document.getElementById('vlmEnabled').checked=s.vlm_enabled;document.getElementById('halfPrecision').checked=s.half;
+    }catch(e){}
+}
+async function updateSetting(k,v){
+    if(k==='conf')document.getElementById('confVal').textContent=v.toFixed(2);
+    else if(k==='imgsz')document.getElementById('imgsVal').textContent=v;
+    else if(k==='max_det')document.getElementById('maxDetVal').textContent=v;
+    try{await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:v})})}catch(e){}
+}
+
+function startStatsPolling(){if(statsInterval)clearInterval(statsInterval);statsInterval=setInterval(async()=>{try{const r=await fetch('/api/stats');const s=await r.json();document.getElementById('statTotal').textContent=s.total_inferences;updateBars(s.activity_distribution);updateTimeline(s.recent_timeline)}catch(e){}},2000)}
+function updateBars(d){const c=document.getElementById('activityBars');const t=Object.values(d).reduce((a,b)=>a+b,0)||1;let h='';for(const[a,n]of Object.entries(d).sort((a,b)=>b[1]-a[1])){const p=((n/t)*100).toFixed(1);h+=`<div class="bar-item"><div class="bar-top"><span class="name">${a}</span><span class="pct">${p}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${actColors[a]||'#8e8e93'}"></div></div></div>`}c.innerHTML=h||'<div style="color:var(--text-ter);font-size:13px">No data</div>'}
+function updateTimeline(tl){const c=document.getElementById('timeline');let h='';for(const e of(tl||[]).slice(-8).reverse()){const a=e.activities.join(', ');const o=e.objects&&e.objects.length?` — ${e.objects.join(', ')}`:'';h+=`<div class="timeline-item"><div class="timeline-time">${e.time}</div><div class="timeline-desc">${e.otters} otter(s): ${a}${o}</div></div>`}c.innerHTML=h||'<div style="color:var(--text-ter);font-size:13px">Waiting...</div>'}
+
+loadVideoList(); loadSettings();
+</script>
 </body>
 </html>
